@@ -34,7 +34,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <AuthProvider>
             <div className="min-h-screen">
-              {children}
+        {children}
             </div>
           </AuthProvider>
         </ErrorBoundary>
