@@ -93,20 +93,20 @@ export default function UserSelector({
       )}
 
       {showManualEntry ? (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <input
             type="text"
             value={manualValue}
             onChange={(e) => setManualValue(e.target.value)}
             placeholder="Enter name manually..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
+            className="w-full px-3 py-3 lg:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 text-base lg:text-sm"
             autoFocus
           />
-          <div className="flex space-x-2">
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
             <button
               type="button"
               onClick={handleManualSubmit}
-              className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+              className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition-colors"
             >
               Add
             </button>
@@ -116,7 +116,7 @@ export default function UserSelector({
                 setShowManualEntry(false)
                 setManualValue('')
               }}
-              className="px-3 py-1 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400 transition-colors"
+              className="w-full sm:w-auto px-4 py-2 bg-gray-300 text-gray-700 rounded text-sm font-medium hover:bg-gray-400 transition-colors"
             >
               Cancel
             </button>
@@ -127,7 +127,7 @@ export default function UserSelector({
           <button
             type="button"
             onClick={() => setIsOpen(!isOpen)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-left flex items-center justify-between text-gray-900"
+            className="w-full px-3 py-3 lg:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-left flex items-center justify-between text-gray-900 text-base lg:text-sm"
           >
             <div className="flex items-center">
               <User className="w-4 h-4 mr-2 text-gray-400" />
@@ -141,7 +141,7 @@ export default function UserSelector({
           {isOpen && (
             <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
               {loading ? (
-                <div className="px-3 py-2 text-gray-500 text-sm">Loading users...</div>
+                <div className="px-3 py-3 text-gray-500 text-sm">Loading users...</div>
               ) : (
                 <>
                   {users.map((user) => (
@@ -149,17 +149,17 @@ export default function UserSelector({
                       key={user.id}
                       type="button"
                       onClick={() => handleUserSelect(user)}
-                      className="w-full px-3 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none text-gray-900"
+                      className="w-full px-3 py-3 lg:py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none text-gray-900"
                     >
                       <div className="flex items-center">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                           <User className="w-4 h-4 text-blue-600" />
                         </div>
-                        <div>
-                          <div className="font-medium text-sm">
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium text-sm truncate">
                             {user.full_name || user.email}
                           </div>
-                          <div className="text-xs text-gray-500 capitalize">
+                          <div className="text-xs text-gray-500 capitalize truncate">
                             {user.role} {user.department && `• ${user.department}`}
                           </div>
                         </div>
@@ -171,13 +171,13 @@ export default function UserSelector({
                   <button
                     type="button"
                     onClick={handleManualEntry}
-                    className="w-full px-3 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none border-t border-gray-200 text-gray-700"
+                    className="w-full px-3 py-3 lg:py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none border-t border-gray-200 text-gray-700"
                   >
                     <div className="flex items-center">
-                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                         <Plus className="w-4 h-4 text-green-600" />
                       </div>
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <div className="font-medium text-sm">Enter manually</div>
                         <div className="text-xs text-gray-500">Add someone not in the list</div>
                       </div>

@@ -164,9 +164,9 @@ function DashboardContent() {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile header */}
-        <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between">
+        <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-4 flex items-center justify-between">
           <button
-            className="text-gray-500 hover:text-gray-700"
+            className="text-gray-500 hover:text-gray-700 p-2 -m-2"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-6 w-6" />
@@ -174,7 +174,7 @@ function DashboardContent() {
           <h1 className="text-lg font-semibold text-gray-900">
             {navigation.find(n => n.key === activeTab)?.name}
           </h1>
-          <div className="w-6 h-6" /> {/* Spacer */}
+          <div className="w-10 h-10" /> {/* Spacer */}
         </div>
 
         {/* Content area */}
@@ -238,15 +238,15 @@ function MainContent({
 
   return (
     <div>
-      <div className="mb-8">
-        <div className="flex justify-between items-start">
+      <div className="mb-6 lg:mb-8">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start space-y-4 lg:space-y-0">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2">
               {activeTab === 'monthly' && 'Monthly Tasks'}
               {activeTab === 'ongoing_admin' && 'Practice Administration'}
               {activeTab === 'personal_todo' && 'Personal ToDos'}
             </h1>
-            <p className="text-gray-600">
+            <p className="text-sm lg:text-base text-gray-600">
               {activeTab === 'monthly' && 'Manage patient tasks organized by month'}
               {activeTab === 'ongoing_admin' && 'Handle ongoing administrative tasks'}
               {activeTab === 'personal_todo' && 'Track your personal tasks and notes'}
@@ -257,7 +257,7 @@ function MainContent({
           {((activeTab === 'personal_todo') || (userRole === 'admin')) && (
             <button
               onClick={onCreateSheet}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
+              className="w-full lg:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 lg:px-4 lg:py-2 rounded-lg font-medium transition-colors flex items-center justify-center lg:justify-start"
             >
               <Plus className="w-4 h-4 mr-2" />
               Create New {' '}
@@ -270,20 +270,20 @@ function MainContent({
       </div>
 
       {sheets.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+        <div className="text-center py-8 lg:py-12 bg-white rounded-lg border border-gray-200">
           <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No sheets found</h3>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 mb-6 px-4">
             {activeTab === 'personal_todo' 
               ? "You don't have any personal todo lists yet."
               : "No sheets available for this category."
             }
           </p>
-          <div className="flex justify-center space-x-3">
+          <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-3 px-4">
             {((activeTab === 'personal_todo') || (userRole === 'admin')) && (
               <button 
                 onClick={onCreateSheet}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Create Your First {' '}
@@ -294,33 +294,33 @@ function MainContent({
             )}
             <button 
               onClick={onRefresh}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors"
+              className="w-full sm:w-auto bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-3 rounded-lg font-medium transition-colors"
             >
               Refresh
             </button>
           </div>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {sheets.map((sheet) => (
-            <div key={sheet.id} className="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">{sheet.name}</h3>
-                <span className="text-sm text-gray-500">
+            <div key={sheet.id} className="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow p-4 lg:p-6">
+              <div className="flex items-center justify-between mb-3 lg:mb-4">
+                <h3 className="text-base lg:text-lg font-medium text-gray-900 truncate flex-1 mr-2">{sheet.name}</h3>
+                <span className="text-xs lg:text-sm text-gray-500 flex-shrink-0">
                   {sheet.month_year && (
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full whitespace-nowrap">
                       {sheet.month_year}
                     </span>
                   )}
                 </span>
               </div>
-              <div className="flex items-center text-sm text-gray-500 mb-4">
-                <Clock className="w-4 h-4 mr-1" />
+              <div className="flex items-center text-xs lg:text-sm text-gray-500 mb-4">
+                <Clock className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
                 Created {new Date(sheet.created_at).toLocaleDateString()}
               </div>
               <button 
                 onClick={() => router.push(`/sheet/${sheet.id}`)}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors"
               >
                 Open Sheet
               </button>

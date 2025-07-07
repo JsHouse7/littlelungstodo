@@ -23,4 +23,71 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 768px) {
+  /* Improve touch targets */
+  button, 
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Prevent zoom on input focus */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="date"],
+  input[type="month"],
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  /* Improve scrolling */
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Better focus states for mobile */
+  button:focus,
+  input:focus,
+  textarea:focus,
+  select:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  /* Prevent text selection on buttons */
+  button {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+}
+
+/* Improve modal scrolling on mobile */
+.modal-content {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Better table responsiveness */
+@media (max-width: 1024px) {
+  table {
+    font-size: 14px;
+  }
+  
+  th, td {
+    padding: 8px 4px;
+  }
 }

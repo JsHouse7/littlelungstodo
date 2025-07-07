@@ -163,9 +163,9 @@ export default function CreateSheetModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 lg:p-6 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">
             Create New {' '}
             {sheetType === 'monthly' && 'Monthly Tasks Sheet'}
@@ -174,14 +174,14 @@ export default function CreateSheetModal({
           </h3>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors p-2 -m-2"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5 lg:w-6 lg:h-6" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6">
+        <form onSubmit={handleSubmit} className="p-4 lg:p-6">
           <div className="space-y-4">
             {/* Sheet Name */}
             <div>
@@ -194,7 +194,7 @@ export default function CreateSheetModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={generateDefaultName()}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
+                className="w-full px-3 py-3 lg:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 text-base lg:text-sm"
                 required
               />
             </div>
@@ -210,15 +210,15 @@ export default function CreateSheetModal({
                   id="monthYear"
                   value={monthYear || getCurrentMonthYear()}
                   onChange={(e) => setMonthYear(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
+                  className="w-full px-3 py-3 lg:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 text-base lg:text-sm"
                 />
               </div>
             )}
 
             {/* Sheet Type Info */}
             <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-              <div className="flex items-center">
-                <Calendar className="w-5 h-5 text-blue-600 mr-2" />
+              <div className="flex items-start">
+                <Calendar className="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
                 <div className="text-sm text-blue-800">
                   {sheetType === 'monthly' && 'This sheet will include columns: Date, File Nr/Acc nr, Patient Name, Query, Parents Name, Cell Number, To be actioned by, Executed, Message Take BY'}
                   {sheetType === 'ongoing_admin' && 'This sheet will include columns: Date, Query, Cell Number, To be actioned by'}
@@ -234,7 +234,7 @@ export default function CreateSheetModal({
                 <button
                   type="button"
                   onClick={() => setShowCustomColumns(!showCustomColumns)}
-                  className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                  className="text-sm text-blue-600 hover:text-blue-800 transition-colors p-2 -m-2"
                 >
                   {showCustomColumns ? 'Hide' : 'Add Custom Columns'}
                 </button>
@@ -248,7 +248,7 @@ export default function CreateSheetModal({
                   
                   {customColumns.map((column, index) => (
                     <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 gap-3">
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">
                             Column Label
@@ -258,7 +258,7 @@ export default function CreateSheetModal({
                             value={column.label}
                             onChange={(e) => updateCustomColumn(index, 'label', e.target.value)}
                             placeholder="e.g., Additional Notes"
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
+                            className="w-full px-3 py-3 lg:py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
                           />
                         </div>
                         <div>
@@ -268,7 +268,7 @@ export default function CreateSheetModal({
                           <select
                             value={column.type}
                             onChange={(e) => updateCustomColumn(index, 'type', e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                            className="w-full px-3 py-3 lg:py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                           >
                             <option value="text">Text</option>
                             <option value="date">Date</option>
@@ -290,7 +290,7 @@ export default function CreateSheetModal({
                         <button
                           type="button"
                           onClick={() => removeCustomColumn(index)}
-                          className="text-red-600 hover:text-red-800 transition-colors"
+                          className="text-red-600 hover:text-red-800 transition-colors p-2 -m-2"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -319,18 +319,18 @@ export default function CreateSheetModal({
           </div>
 
           {/* Buttons */}
-          <div className="flex justify-end space-x-3 mt-6">
+          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              className="w-full sm:w-auto px-4 py-3 lg:py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !name.trim()}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+              className="w-full sm:w-auto px-4 py-3 lg:py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
             >
               {loading ? (
                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

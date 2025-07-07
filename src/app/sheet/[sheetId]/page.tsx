@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { createClient } from '@/lib/supabase'
-import { Plus, Edit, Trash2, Check, Filter, Search, Settings } from 'lucide-react'
+import { Plus, Edit, Trash2, Check, Filter, Search, Settings, ArrowLeft } from 'lucide-react'
 import UserSelector from '@/components/ui/UserSelector'
 import DateInput from '@/components/ui/DateInput'
 import EditSheetModal from '@/components/sheets/EditSheetModal'
@@ -310,8 +310,14 @@ export default function SheetPage() {
           <div className="px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between py-4">
               <div className="flex items-center">
+                <button
+                  onClick={() => router.push('/dashboard')}
+                  className="lg:hidden mr-3 p-2 -m-2 text-gray-500 hover:text-gray-700"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{sheet.name}</h1>
+                  <h1 className="text-xl lg:text-2xl font-bold text-gray-900">{sheet.name}</h1>
                   <p className="text-sm text-gray-500">
                     {sheet.type === 'monthly' && `${sheet.month_year} • Monthly Tasks`}
                     {sheet.type === 'ongoing_admin' && 'Practice Administration'}
@@ -319,31 +325,31 @@ export default function SheetPage() {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 lg:space-x-3">
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center ${
+                  className={`px-3 lg:px-4 py-2 rounded-lg font-medium transition-colors flex items-center text-sm ${
                     showFilters ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  <Filter className="w-4 h-4 mr-2" />
-                  Filters
+                  <Filter className="w-4 h-4 mr-1 lg:mr-2" />
+                  <span className="hidden sm:inline">Filters</span>
                 </button>
                 {(profile?.role === 'admin') && (
                   <button
                     onClick={() => setShowEditModal(true)}
-                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 lg:px-4 py-2 rounded-lg font-medium transition-colors flex items-center text-sm"
                   >
-                    <Settings className="w-4 h-4 mr-2" />
-                    Edit Sheet
+                    <Settings className="w-4 h-4 mr-1 lg:mr-2" />
+                    <span className="hidden sm:inline">Edit</span>
                   </button>
                 )}
                 <button
                   onClick={() => setShowAddTask(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 lg:px-4 py-2 rounded-lg font-medium transition-colors flex items-center text-sm"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Task
+                  <Plus className="w-4 h-4 mr-1 lg:mr-2" />
+                  <span className="hidden sm:inline">Add Task</span>
                 </button>
               </div>
             </div>
@@ -351,12 +357,12 @@ export default function SheetPage() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex-1 px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
           {/* Filters */}
           {showFilters && (
-            <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 lg:p-6 mb-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Filters</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Search Text
@@ -418,9 +424,9 @@ export default function SheetPage() {
           <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
             showAddTask ? 'max-h-[800px] opacity-100 mb-6' : 'max-h-0 opacity-0'
           }`}>
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 lg:p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Task</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
               {columns.map((column) => {
                 // Special handling for specific fields
                 const isUserField = 
@@ -438,7 +444,7 @@ export default function SheetPage() {
                 const isQueryField = column.column_key === 'query'
                 
                 return (
-                  <div key={column.id} className={isQueryField ? 'md:col-span-2 lg:col-span-3' : ''}>
+                  <div key={column.id} className={isQueryField ? 'lg:col-span-2 xl:col-span-3' : ''}>
                     {column.column_type === 'boolean' ? (
                       <div>
                         <label className="flex items-center">
@@ -518,19 +524,19 @@ export default function SheetPage() {
                 )
               })}
             </div>
-            <div className="flex justify-end space-x-3 mt-6">
+            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
               <button
                 onClick={() => {
                   setShowAddTask(false)
                   setNewTaskData({})
                 }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddTask}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 transition-colors"
+                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 transition-colors"
               >
                 Add Task
               </button>
@@ -542,9 +548,9 @@ export default function SheetPage() {
         <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
           editingTask ? 'max-h-[800px] opacity-100 mb-6' : 'max-h-0 opacity-0'
         }`}>
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-4 lg:p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Task</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
               {columns.map((column) => {
                 // Special handling for specific fields
                 const isUserField = 
@@ -562,7 +568,7 @@ export default function SheetPage() {
                 const isQueryField = column.column_key === 'query'
                 
                 return (
-                  <div key={column.id} className={isQueryField ? 'md:col-span-2 lg:col-span-3' : ''}>
+                  <div key={column.id} className={isQueryField ? 'lg:col-span-2 xl:col-span-3' : ''}>
                     {column.column_type === 'boolean' ? (
                       <div>
                         <label className="flex items-center">
@@ -642,19 +648,19 @@ export default function SheetPage() {
                 )
               })}
             </div>
-            <div className="flex justify-end space-x-3 mt-6">
+            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
               <button
                 onClick={() => {
                   setEditingTask(null)
                   setEditTaskData({})
                 }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleUpdateTask}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 transition-colors"
+                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 transition-colors"
               >
                 Update Task
               </button>
@@ -662,9 +668,10 @@ export default function SheetPage() {
           </div>
         </div>
 
-        {/* Tasks Table */}
+        {/* Tasks - Mobile Card View / Desktop Table View */}
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Desktop Table View */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -737,6 +744,85 @@ export default function SheetPage() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="lg:hidden">
+            {filteredTasks.length === 0 ? (
+              <div className="px-4 py-12 text-center text-gray-500">
+                {tasks.length === 0 
+                  ? "No tasks found. Click 'Add Task' to create your first task."
+                  : "No tasks match your current filters. Try adjusting your search criteria."
+                }
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200">
+                {filteredTasks.map((task) => (
+                  <div key={task.id} className={`p-4 ${task.is_completed ? 'bg-gray-50 opacity-75' : ''}`}>
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center flex-1">
+                        <button
+                          onClick={() => toggleTaskComplete(task.id, task.is_completed)}
+                          className={`p-2 rounded-full transition-colors mr-3 ${
+                            task.is_completed 
+                              ? 'bg-green-100 text-green-600 hover:bg-green-200' 
+                              : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                          }`}
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          {columns.slice(0, 2).map((column) => (
+                            <div key={column.id} className="mb-1">
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                {column.column_label}:
+                              </span>
+                              <span className="ml-2 text-sm text-gray-900 truncate block">
+                                {column.column_type === 'boolean' 
+                                  ? (task.data[column.column_key] ? 'Yes' : 'No')
+                                  : task.data[column.column_key] || '-'
+                                }
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex space-x-2 ml-2">
+                        <button 
+                          onClick={() => handleEditTask(task)}
+                          className="text-blue-600 hover:text-blue-800 transition-colors p-1"
+                          title="Edit task"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteTask(task.id)}
+                          className="text-red-600 hover:text-red-800 transition-colors p-1"
+                          title="Delete task"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Additional fields */}
+                    {columns.slice(2).map((column) => (
+                      <div key={column.id} className="mb-2">
+                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                          {column.column_label}:
+                        </span>
+                        <span className="ml-2 text-sm text-gray-900 block break-words">
+                          {column.column_type === 'boolean' 
+                            ? (task.data[column.column_key] ? 'Yes' : 'No')
+                            : task.data[column.column_key] || '-'
+                          }
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         </div>

@@ -116,22 +116,22 @@ export default function Sidebar({
   }
 
   return (
-    <div className={`${collapsed ? 'w-16' : 'w-64'} transition-all duration-300 bg-white border-r border-gray-200 flex flex-col`}>
+    <div className={`${collapsed ? 'w-16' : 'w-64 lg:w-64'} transition-all duration-300 bg-white border-r border-gray-200 flex flex-col`}>
       {/* Header */}
-      <div className="flex items-center px-6 py-6 border-b border-gray-200">
+      <div className="flex items-center px-4 lg:px-6 py-4 lg:py-6 border-b border-gray-200">
         <div className="bg-blue-600 p-2 rounded-lg">
-          <Stethoscope className="w-6 h-6 text-white" />
+          <Stethoscope className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
         </div>
         {!collapsed && (
           <div className="ml-3">
-            <h1 className="text-xl font-bold text-gray-900">Little Lungs</h1>
-            <p className="text-sm text-gray-500">Task Manager</p>
+            <h1 className="text-lg lg:text-xl font-bold text-gray-900">Little Lungs</h1>
+            <p className="text-xs lg:text-sm text-gray-500">Task Manager</p>
           </div>
         )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-2">
+      <nav className="flex-1 px-3 lg:px-4 py-4 lg:py-6 space-y-2">
         {navigation.map((item) => {
           const Icon = item.icon
           const isActive = activeTab === item.key
@@ -140,7 +140,7 @@ export default function Sidebar({
             <button
               key={item.key}
               onClick={() => handleNavClick(item.key)}
-              className={`w-full group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+              className={`w-full group flex items-center px-3 py-4 lg:py-3 text-sm font-medium rounded-lg transition-colors ${
                 isActive
                   ? 'bg-blue-50 text-blue-700 border border-blue-200'
                   : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
@@ -174,36 +174,36 @@ export default function Sidebar({
       </nav>
 
       {/* User profile */}
-      <div className="border-t border-gray-200 px-4 py-4">
+      <div className="border-t border-gray-200 px-3 lg:px-4 py-4">
         <div className="flex items-center">
           <div className="flex-shrink-0">
             <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-              <User className="w-6 h-6 text-blue-600" />
+              <User className="w-5 h-5 lg:w-6 lg:h-6 text-blue-600" />
             </div>
           </div>
           {!collapsed && (
             <div className="ml-3 flex-1">
-              <p className="text-sm font-medium text-gray-900">
+              <p className="text-sm font-medium text-gray-900 truncate">
                 {profile.full_name || profile.email}
               </p>
-              <p className="text-xs text-gray-500 capitalize">
+              <p className="text-xs text-gray-500 capitalize truncate">
                 {profile.role} {profile.department && `• ${profile.department}`}
               </p>
             </div>
           )}
         </div>
         {!collapsed && (
-          <div className="mt-3 flex space-x-2">
+          <div className="mt-3 flex flex-col lg:flex-row space-y-2 lg:space-y-0 lg:space-x-2">
             <button 
               onClick={() => router.push('/settings')}
-              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-xs font-medium transition-colors"
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-xs font-medium transition-colors flex items-center justify-center"
             >
               <Settings className="w-4 h-4 inline mr-1" />
               Settings
             </button>
             <button 
               onClick={handleSignOut}
-              className="flex-1 bg-red-100 hover:bg-red-200 text-red-700 px-3 py-2 rounded-md text-xs font-medium transition-colors"
+              className="flex-1 bg-red-100 hover:bg-red-200 text-red-700 px-3 py-2 rounded-md text-xs font-medium transition-colors flex items-center justify-center"
             >
               <LogOut className="w-4 h-4 inline mr-1" />
               Sign Out
@@ -212,8 +212,8 @@ export default function Sidebar({
         )}
       </div>
 
-      {/* Collapse toggle */}
-      <div className="border-t border-gray-200 p-2">
+      {/* Collapse toggle - only show on desktop */}
+      <div className="hidden lg:block border-t border-gray-200 p-2">
         <button
           onClick={onToggleCollapse}
           className="w-full flex items-center justify-center p-2 text-gray-400 hover:text-gray-600 transition-colors"
