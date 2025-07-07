@@ -8,8 +8,8 @@
     }
   ],
   "env": {
-    "NEXT_PUBLIC_SUPABASE_URL": "@supabase-url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key",
-    "SUPABASE_SERVICE_ROLE_KEY": "@supabase-service-role-key"
+    "NEXT_PUBLIC_SUPABASE_URL": "https://cpcibdibgbjaevbpbmsz.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwY2liZGliZ2JqYWV2YnBibXN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODUyNDQsImV4cCI6MjA2NjM2MTI0NH0.D777BV0CcbMhkNksjCN3T8zkaG_yhjiYxG999agEx_s",
+    "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwY2liZGliZ2JqYWV2YnBibXN6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDc4NTI0NCwiZXhwIjoyMDY2MzYxMjQ0fQ.uNkkfwUXv8wOYw1K8t4IMAADZn7ipTHhNw6JWTj4PBk"
   }
 } 
