@@ -332,7 +332,7 @@ export default function SheetPage() {
   const mobileHeader = <MobileHeader profile={profile} onSignOut={handleSignOut} />;
   const bottomNav = (
     <BottomNav
-      activeTab={sheet.type}
+      activeTab={sheet?.type || 'monthly'}
       onTabChange={(tab) => router.push(`/dashboard?tab=${tab}`)}
       navigation={navigation}
       profile={profile}
@@ -342,8 +342,7 @@ export default function SheetPage() {
 
   return (
     <MobileLayout header={mobileHeader} bottomNav={bottomNav}>
-      {/* Main Content (as previously refactored for mobile) */}
-      {/* Header */}
+      {/* Main Content (header, filters, add/edit forms, task list, etc.) */}
       <div className="bg-white border-b border-gray-200 w-full">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-4 gap-y-2">
@@ -803,7 +802,7 @@ export default function SheetPage() {
         
         {/* Mobile Bottom Navigation */}
         {/* This block is now handled by MobileLayout */}
-      </MobileLayout>
+      </div> {/* Close main content wrapper */}
     </MobileLayout>
   )
 } 
