@@ -18,7 +18,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [initialized, setInitialized] = useState(false)
   
   // Use refs to track cleanup and prevent race conditions
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -36,7 +35,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.warn('Supabase not configured - setting auth loading to false')
       if (mountedRef.current) {
         setLoading(false)
-        setInitialized(true)
       }
       return
     }
@@ -71,6 +69,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // Clear any existing timeout when we start initialization
+    const clearExistingTimeout = () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
+    }
+
     // Get initial session
     const initializeAuth = async () => {
       try {
@@ -79,13 +85,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (!mountedRef.current) return // Component unmounted
         
+        // Clear timeout on successful response
+        clearExistingTimeout()
+        
         if (error) {
           console.error('Auth session error:', error)
           safeSetState(() => {
             setUser(null)
             setProfile(null)
             setLoading(false)
-            setInitialized(true)
           })
           return
         }
@@ -98,39 +106,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(session.user)
             setProfile(profileData)
             setLoading(false)
-            setInitialized(true)
           })
         } else {
           safeSetState(() => {
             setUser(null)
             setProfile(null)
             setLoading(false)
-            setInitialized(true)
           })
         }
         
         console.log('AuthProvider: Initialization complete')
       } catch (sessionErr) {
         console.error('Session fetch exception:', sessionErr)
+        clearExistingTimeout()
         safeSetState(() => {
           setUser(null)
           setProfile(null)
           setLoading(false)
-          setInitialized(true)
         })
       }
     }
 
-    // Set timeout as fallback
+    // Set timeout as fallback - only fires if initialization doesn't complete
     timeoutRef.current = setTimeout(() => {
       console.warn('Auth initialization timeout - setting loading to false')
       safeSetState(() => {
-        if (!initialized) {
-          setLoading(false)
-          setInitialized(true)
-        }
+        setLoading(false)
       })
-    }, 10000) // Reduced to 10 seconds
+    }, 8000) // Reduced to 8 seconds
 
     // Initialize auth
     initializeAuth()
@@ -144,26 +147,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (!mountedRef.current) return // Component unmounted
         
+        // Clear any pending timeout since auth state changed
+        clearExistingTimeout()
+        
         if (session?.user) {
           const profileData = await fetchProfile(session.user.id)
           safeSetState(() => {
             setUser(session.user)
             setProfile(profileData)
-            // Only set loading to false if not already initialized
-            if (!initialized) {
-              setLoading(false)
-              setInitialized(true)
-            }
+            setLoading(false)
           })
         } else {
           safeSetState(() => {
             setUser(null)
             setProfile(null)
-            // Only set loading to false if not already initialized
-            if (!initialized) {
-              setLoading(false)
-              setInitialized(true)
-            }
+            setLoading(false)
           })
         }
       } catch (authErr) {
@@ -171,22 +169,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         safeSetState(() => {
           setUser(null)
           setProfile(null)
-          if (!initialized) {
-            setLoading(false)
-            setInitialized(true)
-          }
+          setLoading(false)
         })
       }
     })
 
     return () => {
       mountedRef.current = false
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-      }
+      clearExistingTimeout()
       subscription.unsubscribe()
     }
-  }, [supabase, initialized])
+  }, [supabase]) // Removed initialized from dependency array
 
   const signOut = async () => {
     await supabase.auth.signOut()
