@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { createClient } from '@/lib/supabase'
-import { Plus, Edit, Trash2, Check, Filter, Search, Settings, ArrowLeft } from 'lucide-react'
+import { Calendar, ClipboardList, Plus, Edit, Trash2, Check, Filter, Search, Settings, ArrowLeft, CheckSquare } from 'lucide-react'
 import UserSelector from '@/components/ui/UserSelector'
 import DateInput from '@/components/ui/DateInput'
 import EditSheetModal from '@/components/sheets/EditSheetModal'
@@ -49,6 +49,28 @@ interface ColumnDefinition {
   created_at: string
 }
 
+// BottomNav for mobile navigation (copied from dashboard)
+function BottomNav({ activeTab, onTabChange, navigation }: { activeTab: SheetType, onTabChange: (tab: SheetType) => void, navigation: any[] }) {
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex justify-around items-center h-16 lg:hidden">
+      {navigation.map((item) => {
+        const Icon = item.icon
+        const isActive = activeTab === item.key
+        return (
+          <button
+            key={item.key}
+            onClick={() => onTabChange(item.key)}
+            className={`flex flex-col items-center justify-center flex-1 h-full focus:outline-none ${isActive ? 'text-blue-600' : 'text-gray-500 hover:text-blue-700'}`}
+          >
+            <Icon className={`w-6 h-6 mb-1 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
+            <span className="text-xs font-medium">{item.name.split(' ')[0]}</span>
+          </button>
+        )
+      })}
+    </nav>
+  )
+}
+
 export default function SheetPage() {
   const params = useParams()
   const router = useRouter()
@@ -71,6 +93,28 @@ export default function SheetPage() {
   // Create supabase client once to prevent recreation on every render
   const supabase = useMemo(() => createClient(), [])
   const sheetId = params.sheetId as string
+
+  // Add navigation array for bottom nav
+  const navigation = [
+    {
+      name: 'Monthly Tasks',
+      key: 'monthly' as SheetType,
+      icon: Calendar,
+      description: 'Patient tasks organized by month',
+    },
+    {
+      name: 'Practice Admin',
+      key: 'ongoing_admin' as SheetType,
+      icon: ClipboardList,
+      description: 'Ongoing administrative tasks',
+    },
+    {
+      name: 'Personal ToDos',
+      key: 'personal_todo' as SheetType,
+      icon: CheckSquare,
+      description: 'Your personal task list',
+    },
+  ]
 
   const loadSheetData = useCallback(async () => {
     setLoadingSheet(true)
@@ -289,22 +333,23 @@ export default function SheetPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <Sidebar 
-        profile={{
-          full_name: profile?.full_name,
-          email: profile?.email || '',
-          role: profile?.role || '',
-          department: profile?.department
-        }}
-        collapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        activeTab={sheet?.type}
-        onTabChange={(tab) => router.push(`/dashboard?tab=${tab}`)}
-      />
-
+      {/* Sidebar - only show on desktop */}
+      <div className="hidden lg:block">
+        <Sidebar 
+          profile={{
+            full_name: profile?.full_name,
+            email: profile?.email || '',
+            role: profile?.role || '',
+            department: profile?.department
+          }}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          activeTab={sheet?.type}
+          onTabChange={(tab) => router.push(`/dashboard?tab=${tab}`)}
+        />
+      </div>
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col pb-16 lg:pb-0"> {/* Add pb-16 for mobile bottom nav space */}
         {/* Header */}
         <div className="bg-white border-b border-gray-200">
           <div className="px-4 sm:px-6 lg:px-8">
@@ -842,6 +887,12 @@ export default function SheetPage() {
           }}
         />
       )}
+      {/* Mobile Bottom Navigation */}
+      <BottomNav
+        activeTab={sheet?.type || 'monthly'}
+        onTabChange={(tab) => router.push(`/dashboard?tab=${tab}`)}
+        navigation={navigation}
+      />
     </div>
   )
 } 
