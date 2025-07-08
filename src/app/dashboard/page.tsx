@@ -32,6 +32,27 @@ interface Sheet {
   updated_at: string
 }
 
+function BottomNav({ activeTab, onTabChange, navigation }: { activeTab: SheetType, onTabChange: (tab: SheetType) => void, navigation: any[] }) {
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex justify-around items-center h-16 lg:hidden">
+      {navigation.map((item) => {
+        const Icon = item.icon
+        const isActive = activeTab === item.key
+        return (
+          <button
+            key={item.key}
+            onClick={() => onTabChange(item.key)}
+            className={`flex flex-col items-center justify-center flex-1 h-full focus:outline-none ${isActive ? 'text-blue-600' : 'text-gray-500 hover:text-blue-700'}`}
+          >
+            <Icon className={`w-6 h-6 mb-1 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
+            <span className="text-xs font-medium">{item.name.split(' ')[0]}</span>
+          </button>
+        )
+      })}
+    </nav>
+  )
+}
+
 function DashboardContent() {
   const { user, profile, loading, signOut } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -128,28 +149,7 @@ function DashboardContent() {
 
   return (
     <div className="h-screen flex bg-gray-50">
-      {/* Mobile sidebar */}
-      <div className={`fixed inset-0 z-40 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
-        <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white">
-          <div className="absolute top-0 right-0 -mr-12 pt-2">
-            <button
-              className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <X className="h-6 w-6 text-white" />
-            </button>
-          </div>
-          <Sidebar 
-            profile={profile}
-            collapsed={false}
-            onToggleCollapse={() => {}}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-          />
-        </div>
-      </div>
-
+      {/* Mobile sidebar removed, only desktop sidebar remains */}
       {/* Desktop sidebar */}
       <div className={`hidden lg:flex lg:flex-shrink-0 transition-all duration-300`}>
         <Sidebar 
@@ -160,23 +160,9 @@ function DashboardContent() {
           onTabChange={setActiveTab}
         />
       </div>
-
       {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Mobile header */}
-        <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-4 flex items-center justify-between">
-          <button
-            className="text-gray-500 hover:text-gray-700 p-2 -m-2"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu className="h-6 w-6" />
-          </button>
-          <h1 className="text-lg font-semibold text-gray-900">
-            {navigation.find(n => n.key === activeTab)?.name}
-          </h1>
-          <div className="w-10 h-10" /> {/* Spacer */}
-        </div>
-
+      <div className="flex-1 flex flex-col overflow-hidden pb-16 lg:pb-0"> {/* Add pb-16 for mobile bottom nav space */}
+        {/* Mobile header removed */}
         {/* Content area */}
         <main className={`flex-1 overflow-y-auto p-4 lg:p-8 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}>
           <div className="max-w-7xl mx-auto">
@@ -191,8 +177,9 @@ function DashboardContent() {
             />
           </div>
         </main>
+        {/* Mobile Bottom Navigation */}
+        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} navigation={navigation} />
       </div>
-
       {/* Create Sheet Modal */}
       <CreateSheetModal
         isOpen={showCreateModal}
