@@ -22,7 +22,8 @@ import {
   Save,
   X,
   Check,
-  AlertTriangle
+  AlertTriangle,
+  Home
 } from 'lucide-react'
 
 export default function SettingsPage() {
@@ -313,6 +314,15 @@ export default function SettingsPage() {
                 <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Settings</h1>
                 <p className="text-sm text-gray-500">Manage your account and application settings</p>
               </div>
+            </div>
+            <div className="flex items-center w-full sm:w-auto justify-end">
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Dashboard
+              </button>
             </div>
           </div>
         </div>
