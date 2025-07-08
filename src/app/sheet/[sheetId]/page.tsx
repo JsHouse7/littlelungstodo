@@ -466,11 +466,12 @@ export default function SheetPage() {
           )}
 
           {/* Add Task Form */}
-          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
-            showAddTask ? 'max-h-[800px] opacity-100 mb-6' : 'max-h-0 opacity-0'
+          <div className={`transition-all duration-300 ease-in-out ${
+            showAddTask ? 'max-h-[90vh] opacity-100 mb-6' : 'max-h-0 opacity-0'
           }`}>
-            <div className="bg-white rounded-lg border border-gray-200 p-4 lg:p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Task</h3>
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <div className="p-4 lg:p-6 max-h-[80vh] overflow-y-auto">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Task</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
               {columns.map((column) => {
                 // Special handling for specific fields
@@ -569,32 +570,34 @@ export default function SheetPage() {
                 )
               })}
             </div>
-            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
-              <button
-                onClick={() => {
-                  setShowAddTask(false)
-                  setNewTaskData({})
-                }}
-                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddTask}
-                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 transition-colors"
-              >
-                Add Task
-              </button>
-            </div>
+                <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
+                  <button
+                    onClick={() => {
+                      setShowAddTask(false)
+                      setNewTaskData({})
+                    }}
+                    className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAddTask}
+                    className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 transition-colors"
+                  >
+                    Add Task
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
         {/* Edit Task Form */}
-        <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
-          editingTask ? 'max-h-[800px] opacity-100 mb-6' : 'max-h-0 opacity-0'
+        <div className={`transition-all duration-300 ease-in-out ${
+          editingTask ? 'max-h-[90vh] opacity-100 mb-6' : 'max-h-0 opacity-0'
         }`}>
-          <div className="bg-white rounded-lg border border-gray-200 p-4 lg:p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Task</h3>
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="p-4 lg:p-6 max-h-[80vh] overflow-y-auto">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Task</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
               {columns.map((column) => {
                 // Special handling for specific fields
@@ -693,22 +696,23 @@ export default function SheetPage() {
                 )
               })}
             </div>
-            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
-              <button
-                onClick={() => {
-                  setEditingTask(null)
-                  setEditTaskData({})
-                }}
-                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleUpdateTask}
-                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 transition-colors"
-              >
-                Update Task
-              </button>
+              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
+                <button
+                  onClick={() => {
+                    setEditingTask(null)
+                    setEditTaskData({})
+                  }}
+                  className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdateTask}
+                  className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Update Task
+                </button>
+              </div>
             </div>
           </div>
         </div>
