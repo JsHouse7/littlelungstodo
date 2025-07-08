@@ -25,6 +25,9 @@ import UserSelector from '@/components/ui/UserSelector'
 import DateInput from '@/components/ui/DateInput'
 import EditSheetModal from '@/components/sheets/EditSheetModal'
 import Sidebar from '@/components/layout/Sidebar'
+import MobileLayout from '@/components/layout/MobileLayout';
+import MobileHeader from '@/components/layout/MobileHeader';
+import BottomNav from '@/components/layout/BottomNav';
 
 // Local types
 type SheetType = 'monthly' | 'ongoing_admin' | 'personal_todo'
@@ -63,205 +66,6 @@ interface ColumnDefinition {
   is_visible: boolean
   select_options: any
   created_at: string
-}
-
-// Mobile Header Component (same as dashboard)
-function MobileHeader({ profile, onSignOut }: { profile: any, onSignOut: () => void }) {
-  const [showUserMenu, setShowUserMenu] = useState(false)
-  const router = useRouter()
-
-  return (
-    <div className="lg:hidden bg-white border-b border-gray-200">
-      <div className="px-4 py-3">
-        <div className="flex items-center justify-between">
-          {/* App Logo/Title */}
-          <div className="flex items-center">
-            <div className="bg-blue-600 p-2 rounded-lg">
-              <CheckSquare className="w-5 h-5 text-white" />
-            </div>
-            <div className="ml-3">
-              <h1 className="text-lg font-bold text-gray-900">Little Lungs</h1>
-            </div>
-          </div>
-
-          {/* User Menu */}
-          <div className="relative">
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center space-x-2 p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
-            >
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-blue-600" />
-              </div>
-              <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
-            </button>
-
-            {/* Dropdown Menu */}
-            {showUserMenu && (
-              <>
-                {/* Backdrop */}
-                <div 
-                  className="fixed inset-0 z-40" 
-                  onClick={() => setShowUserMenu(false)}
-                />
-                
-                {/* Menu */}
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                  {/* User Info */}
-                  <div className="px-4 py-3 border-b border-gray-200">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {profile.full_name || profile.email}
-                    </p>
-                    <p className="text-xs text-gray-500 capitalize truncate">
-                      {profile.role} {profile.department && `• ${profile.department}`}
-                    </p>
-                  </div>
-
-                  {/* Menu Items */}
-                  <div className="py-1">
-                    <button
-                      onClick={() => {
-                        setShowUserMenu(false)
-                        router.push('/settings')
-                      }}
-                      className="w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      <Settings className="w-4 h-4 mr-3 text-gray-400" />
-                      Settings & Profile
-                    </button>
-                    
-                    <button
-                      onClick={() => {
-                        setShowUserMenu(false)
-                        onSignOut()
-                      }}
-                      className="w-full flex items-center px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                      <LogOut className="w-4 h-4 mr-3 text-red-400" />
-                      Sign Out
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Enhanced Bottom Navigation with More Button (same as dashboard)
-function BottomNav({ 
-  activeTab, 
-  onTabChange, 
-  navigation, 
-  profile, 
-  onSignOut 
-}: { 
-  activeTab: SheetType
-  onTabChange: (tab: SheetType) => void
-  navigation: any[]
-  profile: any
-  onSignOut: () => void
-}) {
-  const [showMoreMenu, setShowMoreMenu] = useState(false)
-  const router = useRouter()
-
-  return (
-    <>
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex justify-around items-center h-16 lg:hidden">
-        {/* Main navigation items (first 3) */}
-        {navigation.slice(0, 3).map((item) => {
-          const Icon = item.icon
-          const isActive = activeTab === item.key
-          return (
-            <button
-              key={item.key}
-              onClick={() => onTabChange(item.key)}
-              className={`flex flex-col items-center justify-center flex-1 h-full focus:outline-none ${isActive ? 'text-blue-600' : 'text-gray-500 hover:text-blue-700'}`}
-            >
-              <Icon className={`w-6 h-6 mb-1 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
-              <span className="text-xs font-medium">{item.name.split(' ')[0]}</span>
-            </button>
-          )
-        })}
-
-        {/* More button */}
-        <button
-          onClick={() => setShowMoreMenu(!showMoreMenu)}
-          className={`flex flex-col items-center justify-center flex-1 h-full focus:outline-none ${showMoreMenu ? 'text-blue-600' : 'text-gray-500 hover:text-blue-700'}`}
-        >
-          <Menu className={`w-6 h-6 mb-1 ${showMoreMenu ? 'text-blue-600' : 'text-gray-400'}`} />
-          <span className="text-xs font-medium">More</span>
-        </button>
-      </nav>
-
-      {/* More Menu Overlay */}
-      {showMoreMenu && (
-        <>
-          {/* Backdrop */}
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-25 z-40 lg:hidden" 
-            onClick={() => setShowMoreMenu(false)}
-          />
-          
-          {/* Menu Panel */}
-          <div className="fixed bottom-16 left-4 right-4 bg-white rounded-lg shadow-lg border border-gray-200 z-50 lg:hidden">
-            {/* User Info Header */}
-            <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-blue-600" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {profile.full_name || profile.email}
-                  </p>
-                  <p className="text-xs text-gray-500 capitalize truncate">
-                    {profile.role} {profile.department && `• ${profile.department}`}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Menu Items */}
-            <div className="py-2">
-              <button
-                onClick={() => {
-                  setShowMoreMenu(false)
-                  router.push('/settings')
-                }}
-                className="w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-              >
-                <Settings className="w-5 h-5 mr-3 text-gray-400" />
-                <div className="text-left">
-                  <div className="font-medium">Settings & Profile</div>
-                  <div className="text-xs text-gray-500">
-                    {profile.role === 'admin' ? 'Manage profile and users' : 'Manage your profile'}
-                  </div>
-                </div>
-              </button>
-
-              <button
-                onClick={() => {
-                  setShowMoreMenu(false)
-                  onSignOut()
-                }}
-                className="w-full flex items-center px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
-              >
-                <LogOut className="w-5 h-5 mr-3 text-red-400" />
-                <div className="text-left">
-                  <div className="font-medium">Sign Out</div>
-                  <div className="text-xs text-red-500">End your session</div>
-                </div>
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-    </>
-  )
 }
 
 export default function SheetPage() {
@@ -524,86 +328,77 @@ export default function SheetPage() {
     )
   }
 
+  // Compose header and bottom nav for MobileLayout
+  const mobileHeader = <MobileHeader profile={profile} onSignOut={handleSignOut} />;
+  const bottomNav = (
+    <BottomNav
+      activeTab={sheet.type}
+      onTabChange={(tab) => router.push(`/dashboard?tab=${tab}`)}
+      navigation={navigation}
+      profile={profile}
+      onSignOut={handleSignOut}
+    />
+  );
+
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar - only show on desktop */}
-      <div className="hidden lg:block">
-        <Sidebar 
-          profile={{
-            full_name: profile?.full_name,
-            email: profile?.email || '',
-            role: profile?.role || '',
-            department: profile?.department
-          }}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-          activeTab={sheet?.type}
-          onTabChange={(tab) => router.push(`/dashboard?tab=${tab}`)}
-        />
-      </div>
-      
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col pb-16 lg:pb-0"> {/* Add pb-16 for mobile bottom nav space */}
-        {/* Mobile Header */}
-        <MobileHeader profile={profile} onSignOut={handleSignOut} />
-        
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200">
-          <div className="px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between py-4">
-              <div className="flex items-center">
-                <button
-                  onClick={() => router.push('/dashboard')}
-                  className="lg:hidden mr-3 p-2 -m-2 text-gray-500 hover:text-gray-700"
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                </button>
-                <div>
-                  <h1 className="text-xl lg:text-2xl font-bold text-gray-900">{sheet.name}</h1>
-                  <p className="text-sm text-gray-500">
-                    {sheet.type === 'monthly' && `${sheet.month_year} • Monthly Tasks`}
-                    {sheet.type === 'ongoing_admin' && 'Practice Administration'}
-                    {sheet.type === 'personal_todo' && 'Personal Todo List'}
-                  </p>
-                </div>
+    <MobileLayout header={mobileHeader} bottomNav={bottomNav}>
+      {/* Main Content (as previously refactored for mobile) */}
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 w-full">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-4 gap-y-2">
+            <div className="flex items-center w-full sm:w-auto">
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="lg:hidden mr-3 p-2 -m-2 text-gray-500 hover:text-gray-700"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <div>
+                <h1 className="text-xl lg:text-2xl font-bold text-gray-900">{sheet.name}</h1>
+                <p className="text-sm text-gray-500">
+                  {sheet.type === 'monthly' && `${sheet.month_year} • Monthly Tasks`}
+                  {sheet.type === 'ongoing_admin' && 'Practice Administration'}
+                  {sheet.type === 'personal_todo' && 'Personal Todo List'}
+                </p>
               </div>
-              <div className="flex items-center space-x-2 lg:space-x-3">
+            </div>
+            <div className="flex flex-row flex-wrap gap-2 w-full sm:w-auto justify-end">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`px-3 py-2 rounded-lg font-medium transition-colors flex items-center text-sm w-full sm:w-auto ${
+                  showFilters ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <Filter className="w-4 h-4 mr-1 lg:mr-2" />
+                <span className="sm:inline">Filters</span>
+              </button>
+              {(profile?.role === 'admin') && (
                 <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`px-3 lg:px-4 py-2 rounded-lg font-medium transition-colors flex items-center text-sm ${
-                    showFilters ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  onClick={() => setShowEditModal(true)}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg font-medium transition-colors flex items-center text-sm w-full sm:w-auto"
                 >
-                  <Filter className="w-4 h-4 mr-1 lg:mr-2" />
-                  <span className="hidden sm:inline">Filters</span>
+                  <Settings className="w-4 h-4 mr-1 lg:mr-2" />
+                  <span className="sm:inline">Edit</span>
                 </button>
-                {(profile?.role === 'admin') && (
-                  <button
-                    onClick={() => setShowEditModal(true)}
-                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 lg:px-4 py-2 rounded-lg font-medium transition-colors flex items-center text-sm"
-                  >
-                    <Settings className="w-4 h-4 mr-1 lg:mr-2" />
-                    <span className="hidden sm:inline">Edit</span>
-                  </button>
-                )}
-                <button
-                  onClick={() => setShowAddTask(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 lg:px-4 py-2 rounded-lg font-medium transition-colors flex items-center text-sm"
-                >
-                  <Plus className="w-4 h-4 mr-1 lg:mr-2" />
-                  <span className="hidden sm:inline">Add Task</span>
-                </button>
-              </div>
+              )}
+              <button
+                onClick={() => setShowAddTask(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-medium transition-colors flex items-center text-sm w-full sm:w-auto"
+              >
+                <Plus className="w-4 h-4 mr-1 lg:mr-2" />
+                <span className="sm:inline">Add Task</span>
+              </button>
             </div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex-1 overflow-y-auto w-full">
+          <div className="px-2 sm:px-4 lg:px-8 py-4 sm:py-6 flex flex-col gap-y-4 w-full max-w-full">
             {/* Filters */}
             {showFilters && (
-              <div className="bg-white rounded-lg border border-gray-200 p-4 lg:p-6 mb-6">
+              <div className="bg-white rounded-lg border border-gray-200 p-4 lg:p-6 mb-4 w-full">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Filters</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
@@ -665,12 +460,12 @@ export default function SheetPage() {
 
             {/* Add Task Form */}
             <div className={`transition-all duration-300 ease-in-out ${
-              showAddTask ? 'max-h-[90vh] opacity-100 mb-6' : 'max-h-0 opacity-0'
-            }`}>
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="p-4 lg:p-6 max-h-[80vh] overflow-y-auto">
+              showAddTask ? 'max-h-[90vh] opacity-100 mb-4' : 'max-h-0 opacity-0'
+            } w-full`}> {/* Ensure full width on mobile */}
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden w-full">
+                <div className="p-4 lg:p-6 max-h-[80vh] overflow-y-auto w-full">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Task</h3>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 gap-4 w-full"> {/* Always single column on mobile */}
                     {columns.map((column) => {
                       // Special handling for specific fields
                       const isUserField = 
@@ -791,12 +586,12 @@ export default function SheetPage() {
 
             {/* Edit Task Form */}
             <div className={`transition-all duration-300 ease-in-out ${
-              editingTask ? 'max-h-[90vh] opacity-100 mb-6' : 'max-h-0 opacity-0'
-            }`}>
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="p-4 lg:p-6 max-h-[80vh] overflow-y-auto">
+              editingTask ? 'max-h-[90vh] opacity-100 mb-4' : 'max-h-0 opacity-0'
+            } w-full`}> {/* Ensure full width on mobile */}
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden w-full">
+                <div className="p-4 lg:p-6 max-h-[80vh] overflow-y-auto w-full">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Task</h3>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 gap-4 w-full"> {/* Always single column on mobile */}
                     {columns.map((column) => {
                       // Special handling for specific fields
                       const isUserField = 
@@ -916,161 +711,77 @@ export default function SheetPage() {
             </div>
 
             {/* Tasks - Mobile Card View / Desktop Table View */}
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              {/* Desktop Table View */}
-              <div className="hidden lg:block overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      {columns.map((column) => (
-                        <th key={column.id} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          {column.column_label}
-                        </th>
-                      ))}
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredTasks.length === 0 ? (
-                      <tr>
-                        <td colSpan={columns.length + 2} className="px-6 py-12 text-center text-gray-500">
-                          {tasks.length === 0 
-                            ? "No tasks found. Click 'Add Task' to create your first task."
-                            : "No tasks match your current filters. Try adjusting your search criteria."
-                          }
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredTasks.map((task) => (
-                        <tr key={task.id} className={task.is_completed ? 'bg-gray-50 opacity-75' : ''}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <button
-                              onClick={() => toggleTaskComplete(task.id, task.is_completed)}
-                              className={`p-1 rounded-full transition-colors ${
-                                task.is_completed 
-                                  ? 'bg-green-100 text-green-600 hover:bg-green-200' 
-                                  : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                              }`}
-                            >
-                              <Check className="w-4 h-4" />
-                            </button>
-                          </td>
-                          {columns.map((column) => (
-                            <td key={column.id} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {column.column_type === 'boolean' 
-                                ? (task.data[column.column_key] ? 'Yes' : 'No')
-                                : task.data[column.column_key] || '-'
-                              }
-                            </td>
+            <div className="flex flex-col gap-y-4 w-full">
+              {filteredTasks.length === 0 ? (
+                <div className="bg-white rounded-lg border border-gray-200 p-6 text-center text-gray-500">
+                  No tasks found.
+                </div>
+              ) : (
+                filteredTasks.map((task) => (
+                  <div key={task.id} className="bg-white rounded-lg border border-gray-200 p-4 flex flex-col gap-y-2 w-full">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center flex-1">
+                        <button
+                          onClick={() => toggleTaskComplete(task.id, task.is_completed)}
+                          className={`p-2 rounded-full transition-colors mr-3 ${
+                            task.is_completed 
+                              ? 'bg-green-100 text-green-600 hover:bg-green-200' 
+                              : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                          }`}
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          {columns.slice(0, 2).map((column) => (
+                            <div key={column.id} className="mb-1">
+                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                {column.column_label}:
+                              </span>
+                              <span className="ml-2 text-sm text-gray-900 truncate block">
+                                {column.column_type === 'boolean' 
+                                  ? (task.data[column.column_key] ? 'Yes' : 'No')
+                                  : task.data[column.column_key] || '-'
+                                }
+                              </span>
+                            </div>
                           ))}
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <div className="flex space-x-2">
-                              <button 
-                                onClick={() => handleEditTask(task)}
-                                className="text-blue-600 hover:text-blue-800 transition-colors"
-                                title="Edit task"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </button>
-                              <button 
-                                onClick={() => handleDeleteTask(task.id)}
-                                className="text-red-600 hover:text-red-800 transition-colors"
-                                title="Delete task"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Mobile Card View */}
-              <div className="lg:hidden">
-                {filteredTasks.length === 0 ? (
-                  <div className="px-4 py-12 text-center text-gray-500">
-                    {tasks.length === 0 
-                      ? "No tasks found. Click 'Add Task' to create your first task."
-                      : "No tasks match your current filters. Try adjusting your search criteria."
-                    }
-                  </div>
-                ) : (
-                  <div className="divide-y divide-gray-200">
-                    {filteredTasks.map((task) => (
-                      <div key={task.id} className={`p-4 ${task.is_completed ? 'bg-gray-50 opacity-75' : ''}`}>
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center flex-1">
-                            <button
-                              onClick={() => toggleTaskComplete(task.id, task.is_completed)}
-                              className={`p-2 rounded-full transition-colors mr-3 ${
-                                task.is_completed 
-                                  ? 'bg-green-100 text-green-600 hover:bg-green-200' 
-                                  : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                              }`}
-                            >
-                              <Check className="w-4 h-4" />
-                            </button>
-                            <div className="flex-1 min-w-0">
-                              {columns.slice(0, 2).map((column) => (
-                                <div key={column.id} className="mb-1">
-                                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                    {column.column_label}:
-                                  </span>
-                                  <span className="ml-2 text-sm text-gray-900 truncate block">
-                                    {column.column_type === 'boolean' 
-                                      ? (task.data[column.column_key] ? 'Yes' : 'No')
-                                      : task.data[column.column_key] || '-'
-                                    }
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                          <div className="flex space-x-2 ml-2">
-                            <button 
-                              onClick={() => handleEditTask(task)}
-                              className="text-blue-600 hover:text-blue-800 transition-colors p-1"
-                              title="Edit task"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteTask(task.id)}
-                              className="text-red-600 hover:text-red-800 transition-colors p-1"
-                              title="Delete task"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
                         </div>
-                        
-                        {/* Additional fields */}
-                        {columns.slice(2).map((column) => (
-                          <div key={column.id} className="mb-2">
-                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                              {column.column_label}:
-                            </span>
-                            <span className="ml-2 text-sm text-gray-900 block break-words">
-                              {column.column_type === 'boolean' 
-                                ? (task.data[column.column_key] ? 'Yes' : 'No')
-                                : task.data[column.column_key] || '-'
-                              }
-                            </span>
-                          </div>
-                        ))}
+                      </div>
+                      <div className="flex space-x-2 ml-2">
+                        <button 
+                          onClick={() => handleEditTask(task)}
+                          className="text-blue-600 hover:text-blue-800 transition-colors p-1"
+                          title="Edit task"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteTask(task.id)}
+                          className="text-red-600 hover:text-red-800 transition-colors p-1"
+                          title="Delete task"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Additional fields */}
+                    {columns.slice(2).map((column) => (
+                      <div key={column.id} className="mb-2">
+                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                          {column.column_label}:
+                        </span>
+                        <span className="ml-2 text-sm text-gray-900 block break-words">
+                          {column.column_type === 'boolean' 
+                            ? (task.data[column.column_key] ? 'Yes' : 'No')
+                            : task.data[column.column_key] || '-'
+                          }
+                        </span>
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -1091,14 +802,8 @@ export default function SheetPage() {
         )}
         
         {/* Mobile Bottom Navigation */}
-        <BottomNav
-          activeTab={sheet?.type || 'monthly'}
-          onTabChange={(tab) => router.push(`/dashboard?tab=${tab}`)}
-          navigation={navigation}
-          profile={profile}
-          onSignOut={handleSignOut}
-        />
-      </div>
-    </div>
+        {/* This block is now handled by MobileLayout */}
+      </MobileLayout>
+    </MobileLayout>
   )
 } 
