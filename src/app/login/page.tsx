@@ -1,9 +1,20 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { Stethoscope, Mail, Lock, Eye, EyeOff } from 'lucide-react'
+
+// PWA Detection
+const isPWA = () => {
+  if (typeof window !== 'undefined') {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           (window.navigator as any).standalone ||
+           document.referrer.includes('android-app://') ||
+           window.location.search.includes('utm_source=homescreen')
+  }
+  return false
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -11,10 +22,15 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isPWAMode, setIsPWAMode] = useState(false)
   const router = useRouter()
   
   // Create supabase client with useMemo to prevent recreation on every render
   const supabase = useMemo(() => createClient(), [])
+
+  useEffect(() => {
+    setIsPWAMode(isPWA())
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,18 +38,42 @@ export default function LoginPage() {
     setError('')
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('Login attempt starting...', { isPWA: isPWAMode })
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (error) {
+        console.error('Login error:', error)
         setError(error.message)
-      } else {
+      } else if (data.session) {
+        console.log('Login successful, session created')
+        
+        // For PWA, explicitly store session
+        if (isPWAMode) {
+          try {
+            localStorage.setItem('supabase.auth.token', JSON.stringify({
+              access_token: data.session.access_token,
+              refresh_token: data.session.refresh_token,
+              expires_at: data.session.expires_at,
+              user: data.session.user
+            }))
+            console.log('PWA session stored successfully')
+          } catch (storageError) {
+            console.warn('Failed to store PWA session:', storageError)
+          }
+        }
+        
+        // Navigate to dashboard
         router.push('/dashboard')
+      } else {
+        setError('Login failed - no session created')
       }
-    } catch {
-      setError('An unexpected error occurred')
+    } catch (loginError) {
+      console.error('Login exception:', loginError)
+      setError('An unexpected error occurred during login')
     } finally {
       setLoading(false)
     }
@@ -55,6 +95,11 @@ export default function LoginPage() {
           <p className="mt-2 text-sm text-gray-600">
             Medical Practice Task Management
           </p>
+          {isPWAMode && (
+            <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              PWA Mode
+            </div>
+          )}
         </div>
 
         {/* Login Form */}
@@ -121,6 +166,11 @@ export default function LoginPage() {
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
                 {error}
+                {isPWAMode && (
+                  <div className="mt-2 text-xs text-red-600">
+                    PWA Mode - If issues persist, try opening in browser first
+                  </div>
+                )}
               </div>
             )}
 
@@ -147,6 +197,11 @@ export default function LoginPage() {
             <p className="text-xs text-gray-500">
               Contact your administrator for account access
             </p>
+            {isPWAMode && (
+              <p className="text-xs text-blue-600 mt-2">
+                Running as installed app
+              </p>
+            )}
           </div>
         </div>
       </div>

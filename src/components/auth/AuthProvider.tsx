@@ -17,6 +17,17 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 // Create a single Supabase client instance outside the component
 const supabaseClient = createClient()
 
+// PWA Detection
+const isPWA = () => {
+  if (typeof window !== 'undefined') {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           (window.navigator as any).standalone ||
+           document.referrer.includes('android-app://') ||
+           window.location.search.includes('utm_source=homescreen')
+  }
+  return false
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -77,16 +88,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(profileData)
         setLoading(false)
       })
+      
+      // Store session info for PWA persistence
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('supabase.auth.token', JSON.stringify({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+            expires_at: session.expires_at,
+            user: session.user
+          }))
+        } catch (e) {
+          console.warn('Failed to store auth token:', e)
+        }
+      }
     } else {
       safeSetState(() => {
         setUser(null)
         setProfile(null)
         setLoading(false)
       })
+      
+      // Clear stored session for PWA
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.removeItem('supabase.auth.token')
+        } catch (e) {
+          console.warn('Failed to clear auth token:', e)
+        }
+      }
     }
   }, [clearExistingTimeout, safeSetState, fetchProfile])
 
   const signOut = useCallback(async () => {
+    // Clear local storage first for PWA
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('supabase.auth.token')
+      } catch (e) {
+        console.warn('Failed to clear stored auth token:', e)
+      }
+    }
+    
     await supabaseClient.auth.signOut()
   }, [])
 
@@ -106,10 +149,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
-    // Initialize auth
+    // Initialize auth with PWA-awareness
     const initializeAuth = async () => {
       try {
         console.log('AuthProvider: Starting session initialization...')
+        
+        // Check if running as PWA
+        if (isPWA()) {
+          console.log('AuthProvider: PWA mode detected, checking local storage...')
+          
+          // Try to restore session from localStorage for PWA
+          try {
+            const storedToken = localStorage.getItem('supabase.auth.token')
+            if (storedToken) {
+              const tokenData = JSON.parse(storedToken)
+              console.log('AuthProvider: Found stored session, attempting restore...')
+              
+              // Set the session in Supabase
+              const { data, error } = await supabaseClient.auth.setSession({
+                access_token: tokenData.access_token,
+                refresh_token: tokenData.refresh_token
+              })
+              
+              if (!error && data.session) {
+                console.log('AuthProvider: Session restored successfully')
+                await handleAuthState(data.session, true)
+                console.log('AuthProvider: PWA initialization complete')
+                return
+              } else {
+                console.log('AuthProvider: Stored session invalid, proceeding with normal flow')
+                localStorage.removeItem('supabase.auth.token')
+              }
+            }
+          } catch (e) {
+            console.warn('AuthProvider: Failed to restore PWA session:', e)
+          }
+        }
+        
+        // Normal session check
         const { data: { session }, error } = await supabaseClient.auth.getSession()
         
         if (!mountedRef.current) return
@@ -142,7 +219,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     timeoutRef.current = setTimeout(() => {
       console.warn('Auth initialization timeout - setting loading to false')
       safeSetState(() => setLoading(false))
-    }, 5000) // Reduced to 5 seconds
+    }, 8000) // Increased timeout for PWA
 
     // Initialize
     initializeAuth()
