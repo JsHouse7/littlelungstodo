@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useMemo, useRef } from 'react'
+import { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase'
 import { User } from '@supabase/supabase-js'
 import { Profile } from '@/lib/database.types'
@@ -14,79 +14,105 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+// Create a single Supabase client instance outside the component
+const supabaseClient = createClient()
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   
-  // Use refs to track cleanup and prevent race conditions
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  // Use refs for cleanup and preventing race conditions
   const mountedRef = useRef(true)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const initializingRef = useRef(false)
   
-  // Create supabase client once to prevent recreation on every render
-  const supabase = useMemo(() => createClient(), [])
+  // Memoized functions to prevent re-creation
+  const clearExistingTimeout = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+  }, [])
+
+  const safeSetState = useCallback((updater: () => void) => {
+    if (mountedRef.current) {
+      updater()
+    }
+  }, [])
+
+  const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
+    try {
+      console.log('AuthProvider: Fetching user profile...')
+      const { data: profileData, error: profileError } = await supabaseClient
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+      
+      if (profileError) {
+        console.error('Profile fetch error:', profileError)
+        return null
+      }
+      
+      console.log('AuthProvider: Profile fetched successfully')
+      return profileData
+    } catch (profileErr) {
+      console.error('Profile fetch exception:', profileErr)
+      return null
+    }
+  }, [])
+
+  const handleAuthState = useCallback(async (session: any, clearTimeout: boolean = true) => {
+    if (!mountedRef.current) return
+    
+    if (clearTimeout) {
+      clearExistingTimeout()
+    }
+    
+    if (session?.user) {
+      const profileData = await fetchProfile(session.user.id)
+      safeSetState(() => {
+        setUser(session.user)
+        setProfile(profileData)
+        setLoading(false)
+      })
+    } else {
+      safeSetState(() => {
+        setUser(null)
+        setProfile(null)
+        setLoading(false)
+      })
+    }
+  }, [clearExistingTimeout, safeSetState, fetchProfile])
+
+  const signOut = useCallback(async () => {
+    await supabaseClient.auth.signOut()
+  }, [])
 
   useEffect(() => {
-    // Reset mounted ref
+    // Prevent multiple initializations
+    if (initializingRef.current) {
+      return
+    }
+    
+    initializingRef.current = true
     mountedRef.current = true
     
     // Check if Supabase is properly configured
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       console.warn('Supabase not configured - setting auth loading to false')
-      if (mountedRef.current) {
-        setLoading(false)
-      }
+      safeSetState(() => setLoading(false))
       return
     }
 
-    // Function to safely update state only if component is mounted
-    const safeSetState = (updater: () => void) => {
-      if (mountedRef.current) {
-        updater()
-      }
-    }
-
-    // Fetch user profile
-    const fetchProfile = async (userId: string): Promise<Profile | null> => {
-      try {
-        console.log('AuthProvider: Fetching user profile...')
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .single()
-        
-        if (profileError) {
-          console.error('Profile fetch error:', profileError)
-          return null
-        }
-        
-        console.log('AuthProvider: Profile fetched successfully')
-        return profileData
-      } catch (profileErr) {
-        console.error('Profile fetch exception:', profileErr)
-        return null
-      }
-    }
-
-    // Clear any existing timeout when we start initialization
-    const clearExistingTimeout = () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-        timeoutRef.current = null
-      }
-    }
-
-    // Get initial session
+    // Initialize auth
     const initializeAuth = async () => {
       try {
         console.log('AuthProvider: Starting session initialization...')
-        const { data: { session }, error } = await supabase.auth.getSession()
+        const { data: { session }, error } = await supabaseClient.auth.getSession()
         
-        if (!mountedRef.current) return // Component unmounted
-        
-        // Clear timeout on successful response
-        clearExistingTimeout()
+        if (!mountedRef.current) return
         
         if (error) {
           console.error('Auth session error:', error)
@@ -99,22 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         console.log('AuthProvider: Session retrieved, user:', session?.user ? 'authenticated' : 'not authenticated')
-        
-        if (session?.user) {
-          const profileData = await fetchProfile(session.user.id)
-          safeSetState(() => {
-            setUser(session.user)
-            setProfile(profileData)
-            setLoading(false)
-          })
-        } else {
-          safeSetState(() => {
-            setUser(null)
-            setProfile(null)
-            setLoading(false)
-          })
-        }
-        
+        await handleAuthState(session, true)
         console.log('AuthProvider: Initialization complete')
       } catch (sessionErr) {
         console.error('Session fetch exception:', sessionErr)
@@ -127,43 +138,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Set timeout as fallback - only fires if initialization doesn't complete
+    // Set timeout as fallback
     timeoutRef.current = setTimeout(() => {
       console.warn('Auth initialization timeout - setting loading to false')
-      safeSetState(() => {
-        setLoading(false)
-      })
-    }, 8000) // Reduced to 8 seconds
+      safeSetState(() => setLoading(false))
+    }, 5000) // Reduced to 5 seconds
 
-    // Initialize auth
+    // Initialize
     initializeAuth()
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event: string, session: any) => {
+    } = supabaseClient.auth.onAuthStateChange(async (event: string, session: any) => {
       try {
         console.log('AuthProvider: Auth state changed:', event)
-        
-        if (!mountedRef.current) return // Component unmounted
-        
-        // Clear any pending timeout since auth state changed
-        clearExistingTimeout()
-        
-        if (session?.user) {
-          const profileData = await fetchProfile(session.user.id)
-          safeSetState(() => {
-            setUser(session.user)
-            setProfile(profileData)
-            setLoading(false)
-          })
-        } else {
-          safeSetState(() => {
-            setUser(null)
-            setProfile(null)
-            setLoading(false)
-          })
-        }
+        if (!mountedRef.current) return
+        await handleAuthState(session, true)
       } catch (authErr) {
         console.error('Auth state change error:', authErr)
         safeSetState(() => {
@@ -176,14 +167,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       mountedRef.current = false
+      initializingRef.current = false
       clearExistingTimeout()
       subscription.unsubscribe()
     }
-  }, [supabase]) // Removed initialized from dependency array
-
-  const signOut = async () => {
-    await supabase.auth.signOut()
-  }
+  }, []) // Empty dependency array - only run once
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, signOut }}>
