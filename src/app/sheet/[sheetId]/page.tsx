@@ -4,7 +4,23 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { createClient } from '@/lib/supabase'
-import { Calendar, ClipboardList, Plus, Edit, Trash2, Check, Filter, Search, Settings, ArrowLeft, CheckSquare } from 'lucide-react'
+import { 
+  Calendar, 
+  ClipboardList, 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Check, 
+  Filter, 
+  Search, 
+  Settings, 
+  ArrowLeft, 
+  CheckSquare,
+  User,
+  LogOut,
+  ChevronDown,
+  Menu
+} from 'lucide-react'
 import UserSelector from '@/components/ui/UserSelector'
 import DateInput from '@/components/ui/DateInput'
 import EditSheetModal from '@/components/sheets/EditSheetModal'
@@ -49,32 +65,209 @@ interface ColumnDefinition {
   created_at: string
 }
 
-// BottomNav for mobile navigation (copied from dashboard)
-function BottomNav({ activeTab, onTabChange, navigation }: { activeTab: SheetType, onTabChange: (tab: SheetType) => void, navigation: any[] }) {
+// Mobile Header Component (same as dashboard)
+function MobileHeader({ profile, onSignOut }: { profile: any, onSignOut: () => void }) {
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const router = useRouter()
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex justify-around items-center h-16 lg:hidden">
-      {navigation.map((item) => {
-        const Icon = item.icon
-        const isActive = activeTab === item.key
-        return (
-          <button
-            key={item.key}
-            onClick={() => onTabChange(item.key)}
-            className={`flex flex-col items-center justify-center flex-1 h-full focus:outline-none ${isActive ? 'text-blue-600' : 'text-gray-500 hover:text-blue-700'}`}
-          >
-            <Icon className={`w-6 h-6 mb-1 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
-            <span className="text-xs font-medium">{item.name.split(' ')[0]}</span>
-          </button>
-        )
-      })}
-    </nav>
+    <div className="lg:hidden bg-white border-b border-gray-200">
+      <div className="px-4 py-3">
+        <div className="flex items-center justify-between">
+          {/* App Logo/Title */}
+          <div className="flex items-center">
+            <div className="bg-blue-600 p-2 rounded-lg">
+              <CheckSquare className="w-5 h-5 text-white" />
+            </div>
+            <div className="ml-3">
+              <h1 className="text-lg font-bold text-gray-900">Little Lungs</h1>
+            </div>
+          </div>
+
+          {/* User Menu */}
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center space-x-2 p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+            >
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <User className="w-4 h-4 text-blue-600" />
+              </div>
+              <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Dropdown Menu */}
+            {showUserMenu && (
+              <>
+                {/* Backdrop */}
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setShowUserMenu(false)}
+                />
+                
+                {/* Menu */}
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                  {/* User Info */}
+                  <div className="px-4 py-3 border-b border-gray-200">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {profile.full_name || profile.email}
+                    </p>
+                    <p className="text-xs text-gray-500 capitalize truncate">
+                      {profile.role} {profile.department && `• ${profile.department}`}
+                    </p>
+                  </div>
+
+                  {/* Menu Items */}
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false)
+                        router.push('/settings')
+                      }}
+                      className="w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      <Settings className="w-4 h-4 mr-3 text-gray-400" />
+                      Settings & Profile
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false)
+                        onSignOut()
+                      }}
+                      className="w-full flex items-center px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4 mr-3 text-red-400" />
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Enhanced Bottom Navigation with More Button (same as dashboard)
+function BottomNav({ 
+  activeTab, 
+  onTabChange, 
+  navigation, 
+  profile, 
+  onSignOut 
+}: { 
+  activeTab: SheetType
+  onTabChange: (tab: SheetType) => void
+  navigation: any[]
+  profile: any
+  onSignOut: () => void
+}) {
+  const [showMoreMenu, setShowMoreMenu] = useState(false)
+  const router = useRouter()
+
+  return (
+    <>
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex justify-around items-center h-16 lg:hidden">
+        {/* Main navigation items (first 3) */}
+        {navigation.slice(0, 3).map((item) => {
+          const Icon = item.icon
+          const isActive = activeTab === item.key
+          return (
+            <button
+              key={item.key}
+              onClick={() => onTabChange(item.key)}
+              className={`flex flex-col items-center justify-center flex-1 h-full focus:outline-none ${isActive ? 'text-blue-600' : 'text-gray-500 hover:text-blue-700'}`}
+            >
+              <Icon className={`w-6 h-6 mb-1 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
+              <span className="text-xs font-medium">{item.name.split(' ')[0]}</span>
+            </button>
+          )
+        })}
+
+        {/* More button */}
+        <button
+          onClick={() => setShowMoreMenu(!showMoreMenu)}
+          className={`flex flex-col items-center justify-center flex-1 h-full focus:outline-none ${showMoreMenu ? 'text-blue-600' : 'text-gray-500 hover:text-blue-700'}`}
+        >
+          <Menu className={`w-6 h-6 mb-1 ${showMoreMenu ? 'text-blue-600' : 'text-gray-400'}`} />
+          <span className="text-xs font-medium">More</span>
+        </button>
+      </nav>
+
+      {/* More Menu Overlay */}
+      {showMoreMenu && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-25 z-40 lg:hidden" 
+            onClick={() => setShowMoreMenu(false)}
+          />
+          
+          {/* Menu Panel */}
+          <div className="fixed bottom-16 left-4 right-4 bg-white rounded-lg shadow-lg border border-gray-200 z-50 lg:hidden">
+            {/* User Info Header */}
+            <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <User className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {profile.full_name || profile.email}
+                  </p>
+                  <p className="text-xs text-gray-500 capitalize truncate">
+                    {profile.role} {profile.department && `• ${profile.department}`}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Menu Items */}
+            <div className="py-2">
+              <button
+                onClick={() => {
+                  setShowMoreMenu(false)
+                  router.push('/settings')
+                }}
+                className="w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <Settings className="w-5 h-5 mr-3 text-gray-400" />
+                <div className="text-left">
+                  <div className="font-medium">Settings & Profile</div>
+                  <div className="text-xs text-gray-500">
+                    {profile.role === 'admin' ? 'Manage profile and users' : 'Manage your profile'}
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowMoreMenu(false)
+                  onSignOut()
+                }}
+                className="w-full flex items-center px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+              >
+                <LogOut className="w-5 h-5 mr-3 text-red-400" />
+                <div className="text-left">
+                  <div className="font-medium">Sign Out</div>
+                  <div className="text-xs text-red-500">End your session</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </>
   )
 }
 
 export default function SheetPage() {
   const params = useParams()
   const router = useRouter()
-  const { user, profile, loading } = useAuth()
+  const { user, profile, loading, signOut } = useAuth()
   const [sheet, setSheet] = useState<Sheet | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
   const [columns, setColumns] = useState<ColumnDefinition[]>([])
@@ -271,37 +464,37 @@ export default function SheetPage() {
 
 
 
+  const handleSignOut = async () => {
+    await signOut()
+    router.push('/login')
+  }
+
   // Filter tasks based on current filters
-  const filteredTasks = tasks.filter(task => {
-    // Text filter (search in all text fields)
-    if (filterText) {
-      const searchText = filterText.toLowerCase()
-      const matchesText = Object.values(task.data).some(value => 
-        value && value.toString().toLowerCase().includes(searchText)
-      )
-      if (!matchesText) return false
-    }
-
-    // User filter (check assigned_to and other user fields)
-    if (filterUser) {
-      const userFields = ['to_be_actioned_by', 'message_taken_by', 'assigned_to', 'message_take_by']
-      const matchesUser = userFields.some(field => 
-        task.data[field] && typeof task.data[field] === 'string' && task.data[field].toLowerCase().includes(filterUser.toLowerCase())
-      ) || 
-      // Also check any custom fields that might be user fields
-      Object.keys(task.data).some(key => 
-        (key.includes('actioned_by') || key.includes('taken_by') || key.includes('assigned_to')) &&
-        task.data[key] && typeof task.data[key] === 'string' && task.data[key].toLowerCase().includes(filterUser.toLowerCase())
-      )
-      if (!matchesUser) return false
-    }
-
-    // Status filter
-    if (filterStatus === 'completed' && !task.is_completed) return false
-    if (filterStatus === 'pending' && task.is_completed) return false
-
-    return true
-  })
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      // Text filter
+      if (filterText) {
+        const searchableText = Object.values(task.data).join(' ').toLowerCase()
+        if (!searchableText.includes(filterText.toLowerCase())) {
+          return false
+        }
+      }
+      
+      // User filter
+      if (filterUser) {
+        const userText = Object.values(task.data).join(' ').toLowerCase()
+        if (!userText.includes(filterUser.toLowerCase())) {
+          return false
+        }
+      }
+      
+      // Status filter
+      if (filterStatus === 'completed' && !task.is_completed) return false
+      if (filterStatus === 'pending' && task.is_completed) return false
+      
+      return true
+    })
+  }, [tasks, filterText, filterUser, filterStatus])
 
   if (loading || loadingSheet) {
     return (
@@ -348,8 +541,12 @@ export default function SheetPage() {
           onTabChange={(tab) => router.push(`/dashboard?tab=${tab}`)}
         />
       </div>
+      
       {/* Main Content */}
       <div className="flex-1 flex flex-col pb-16 lg:pb-0"> {/* Add pb-16 for mobile bottom nav space */}
+        {/* Mobile Header */}
+        <MobileHeader profile={profile} onSignOut={handleSignOut} />
+        
         {/* Header */}
         <div className="bg-white border-b border-gray-200">
           <div className="px-4 sm:px-6 lg:px-8">
@@ -402,501 +599,506 @@ export default function SheetPage() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
-          {/* Filters */}
-          {showFilters && (
-            <div className="bg-white rounded-lg border border-gray-200 p-4 lg:p-6 mb-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Filters</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Search Text
-                  </label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <div className="flex-1 overflow-y-auto">
+          <div className="px-4 sm:px-6 lg:px-8 py-6">
+            {/* Filters */}
+            {showFilters && (
+              <div className="bg-white rounded-lg border border-gray-200 p-4 lg:p-6 mb-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Filters</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Search Text
+                    </label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        value={filterText}
+                        onChange={(e) => setFilterText(e.target.value)}
+                        placeholder="Search in all fields..."
+                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Filter by User
+                    </label>
                     <input
                       type="text"
-                      value={filterText}
-                      onChange={(e) => setFilterText(e.target.value)}
-                      placeholder="Search in all fields..."
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
+                      value={filterUser}
+                      onChange={(e) => setFilterUser(e.target.value)}
+                      placeholder="Enter user name..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
                     />
                   </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Filter by User
-                  </label>
-                  <input
-                    type="text"
-                    value={filterUser}
-                    onChange={(e) => setFilterUser(e.target.value)}
-                    placeholder="Enter user name..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Status
-                  </label>
-                  <select
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value as 'all' | 'completed' | 'pending')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                  >
-                    <option value="all">All Tasks</option>
-                    <option value="pending">Pending Tasks</option>
-                    <option value="completed">Completed Tasks</option>
-                  </select>
-                </div>
-              </div>
-              <div className="flex justify-end mt-4">
-                <button
-                  onClick={() => {
-                    setFilterText('')
-                    setFilterUser('')
-                    setFilterStatus('all')
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-                >
-                  Clear Filters
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Add Task Form */}
-          <div className={`transition-all duration-300 ease-in-out ${
-            showAddTask ? 'max-h-[90vh] opacity-100 mb-6' : 'max-h-0 opacity-0'
-          }`}>
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <div className="p-4 lg:p-6 max-h-[80vh] overflow-y-auto">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Task</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-              {columns.map((column) => {
-                // Special handling for specific fields
-                const isUserField = 
-                  column.column_key === 'to_be_actioned_by' || 
-                  column.column_key === 'message_taken_by' || 
-                  column.column_key === 'assigned_to' ||
-                  column.column_key === 'message_take_by' ||
-                  column.column_key.includes('actioned_by') ||
-                  column.column_key.includes('taken_by') ||
-                  column.column_key.includes('assigned_to') ||
-                  column.column_label.toLowerCase().includes('actioned by') ||
-                  column.column_label.toLowerCase().includes('taken by') ||
-                  column.column_label.toLowerCase().includes('assigned to')
-                const isDateField = column.column_type === 'date'
-                const isQueryField = column.column_key === 'query'
-                
-                return (
-                  <div key={column.id} className={isQueryField ? 'lg:col-span-2 xl:col-span-3' : ''}>
-                    {column.column_type === 'boolean' ? (
-                      <div>
-                        <label className="flex items-center">
-                          <input
-                            type="checkbox"
-                            checked={newTaskData[column.column_key] || false}
-                            onChange={(e) => setNewTaskData(prev => ({
-                              ...prev,
-                              [column.column_key]: e.target.checked
-                            }))}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-2"
-                          />
-                          <span className="text-sm font-medium text-gray-700">
-                            {column.column_label}
-                            {column.is_required && <span className="text-red-500 ml-1">*</span>}
-                          </span>
-                        </label>
-                      </div>
-                    ) : isUserField ? (
-                      <UserSelector
-                        value={newTaskData[column.column_key] || ''}
-                        onChange={(value) => setNewTaskData(prev => ({
-                          ...prev,
-                          [column.column_key]: value
-                        }))}
-                        label={column.column_label}
-                        required={column.is_required}
-                        placeholder={`Select ${column.column_label.toLowerCase()}...`}
-                      />
-                    ) : isDateField ? (
-                      <DateInput
-                        value={newTaskData[column.column_key] || ''}
-                        onChange={(value) => setNewTaskData(prev => ({
-                          ...prev,
-                          [column.column_key]: value
-                        }))}
-                        label={column.column_label}
-                        required={column.is_required}
-                      />
-                    ) : isQueryField ? (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          {column.column_label}
-                          {column.is_required && <span className="text-red-500 ml-1">*</span>}
-                        </label>
-                        <textarea
-                          value={newTaskData[column.column_key] || ''}
-                          onChange={(e) => setNewTaskData(prev => ({
-                            ...prev,
-                            [column.column_key]: e.target.value
-                          }))}
-                          rows={3}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
-                          placeholder="Enter your query or message..."
-                          required={column.is_required}
-                        />
-                      </div>
-                    ) : (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          {column.column_label}
-                          {column.is_required && <span className="text-red-500 ml-1">*</span>}
-                        </label>
-                        <input
-                          type={column.column_type === 'number' ? 'number' : 'text'}
-                          value={newTaskData[column.column_key] || ''}
-                          onChange={(e) => setNewTaskData(prev => ({
-                            ...prev,
-                            [column.column_key]: e.target.value
-                          }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
-                          required={column.is_required}
-                        />
-                      </div>
-                    )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Status
+                    </label>
+                    <select
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value as 'all' | 'completed' | 'pending')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                    >
+                      <option value="all">All Tasks</option>
+                      <option value="pending">Pending Tasks</option>
+                      <option value="completed">Completed Tasks</option>
+                    </select>
                   </div>
-                )
-              })}
-            </div>
-                <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
+                </div>
+                <div className="flex justify-end mt-4">
                   <button
                     onClick={() => {
-                      setShowAddTask(false)
-                      setNewTaskData({})
+                      setFilterText('')
+                      setFilterUser('')
+                      setFilterStatus('all')
                     }}
-                    className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
                   >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleAddTask}
-                    className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    Add Task
+                    Clear Filters
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
+            )}
 
-        {/* Edit Task Form */}
-        <div className={`transition-all duration-300 ease-in-out ${
-          editingTask ? 'max-h-[90vh] opacity-100 mb-6' : 'max-h-0 opacity-0'
-        }`}>
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="p-4 lg:p-6 max-h-[80vh] overflow-y-auto">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Task</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-              {columns.map((column) => {
-                // Special handling for specific fields
-                const isUserField = 
-                  column.column_key === 'to_be_actioned_by' || 
-                  column.column_key === 'message_taken_by' || 
-                  column.column_key === 'assigned_to' ||
-                  column.column_key === 'message_take_by' ||
-                  column.column_key.includes('actioned_by') ||
-                  column.column_key.includes('taken_by') ||
-                  column.column_key.includes('assigned_to') ||
-                  column.column_label.toLowerCase().includes('actioned by') ||
-                  column.column_label.toLowerCase().includes('taken by') ||
-                  column.column_label.toLowerCase().includes('assigned to')
-                const isDateField = column.column_type === 'date'
-                const isQueryField = column.column_key === 'query'
-                
-                return (
-                  <div key={column.id} className={isQueryField ? 'lg:col-span-2 xl:col-span-3' : ''}>
-                    {column.column_type === 'boolean' ? (
-                      <div>
-                        <label className="flex items-center">
-                          <input
-                            type="checkbox"
-                            checked={editTaskData[column.column_key] || false}
-                            onChange={(e) => setEditTaskData(prev => ({
-                              ...prev,
-                              [column.column_key]: e.target.checked
-                            }))}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-2"
-                          />
-                          <span className="text-sm font-medium text-gray-700">
-                            {column.column_label}
-                            {column.is_required && <span className="text-red-500 ml-1">*</span>}
-                          </span>
-                        </label>
-                      </div>
-                    ) : isUserField ? (
-                      <UserSelector
-                        value={editTaskData[column.column_key] || ''}
-                        onChange={(value) => setEditTaskData(prev => ({
-                          ...prev,
-                          [column.column_key]: value
-                        }))}
-                        label={column.column_label}
-                        required={column.is_required}
-                        placeholder={`Select ${column.column_label.toLowerCase()}...`}
-                      />
-                    ) : isDateField ? (
-                      <DateInput
-                        value={editTaskData[column.column_key] || ''}
-                        onChange={(value) => setEditTaskData(prev => ({
-                          ...prev,
-                          [column.column_key]: value
-                        }))}
-                        label={column.column_label}
-                        required={column.is_required}
-                      />
-                    ) : isQueryField ? (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          {column.column_label}
-                          {column.is_required && <span className="text-red-500 ml-1">*</span>}
-                        </label>
-                        <textarea
-                          value={editTaskData[column.column_key] || ''}
-                          onChange={(e) => setEditTaskData(prev => ({
-                            ...prev,
-                            [column.column_key]: e.target.value
-                          }))}
-                          rows={3}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
-                          placeholder="Enter your query or message..."
-                          required={column.is_required}
-                        />
-                      </div>
-                    ) : (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          {column.column_label}
-                          {column.is_required && <span className="text-red-500 ml-1">*</span>}
-                        </label>
-                        <input
-                          type={column.column_type === 'number' ? 'number' : 'text'}
-                          value={editTaskData[column.column_key] || ''}
-                          onChange={(e) => setEditTaskData(prev => ({
-                            ...prev,
-                            [column.column_key]: e.target.value
-                          }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
-                          required={column.is_required}
-                        />
-                      </div>
-                    )}
+            {/* Add Task Form */}
+            <div className={`transition-all duration-300 ease-in-out ${
+              showAddTask ? 'max-h-[90vh] opacity-100 mb-6' : 'max-h-0 opacity-0'
+            }`}>
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="p-4 lg:p-6 max-h-[80vh] overflow-y-auto">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Task</h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {columns.map((column) => {
+                      // Special handling for specific fields
+                      const isUserField = 
+                        column.column_key === 'to_be_actioned_by' || 
+                        column.column_key === 'message_taken_by' || 
+                        column.column_key === 'assigned_to' ||
+                        column.column_key === 'message_take_by' ||
+                        column.column_key.includes('actioned_by') ||
+                        column.column_key.includes('taken_by') ||
+                        column.column_key.includes('assigned_to') ||
+                        column.column_label.toLowerCase().includes('actioned by') ||
+                        column.column_label.toLowerCase().includes('taken by') ||
+                        column.column_label.toLowerCase().includes('assigned to')
+                      const isDateField = column.column_type === 'date'
+                      const isQueryField = column.column_key === 'query'
+                      
+                      return (
+                        <div key={column.id} className={isQueryField ? 'lg:col-span-2 xl:col-span-3' : ''}>
+                          {column.column_type === 'boolean' ? (
+                            <div>
+                              <label className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  checked={newTaskData[column.column_key] || false}
+                                  onChange={(e) => setNewTaskData(prev => ({
+                                    ...prev,
+                                    [column.column_key]: e.target.checked
+                                  }))}
+                                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-2"
+                                />
+                                <span className="text-sm font-medium text-gray-700">
+                                  {column.column_label}
+                                  {column.is_required && <span className="text-red-500 ml-1">*</span>}
+                                </span>
+                              </label>
+                            </div>
+                          ) : isUserField ? (
+                            <UserSelector
+                              value={newTaskData[column.column_key] || ''}
+                              onChange={(value) => setNewTaskData(prev => ({
+                                ...prev,
+                                [column.column_key]: value
+                              }))}
+                              label={column.column_label}
+                              required={column.is_required}
+                              placeholder={`Select ${column.column_label.toLowerCase()}...`}
+                            />
+                          ) : isDateField ? (
+                            <DateInput
+                              value={newTaskData[column.column_key] || ''}
+                              onChange={(value) => setNewTaskData(prev => ({
+                                ...prev,
+                                [column.column_key]: value
+                              }))}
+                              label={column.column_label}
+                              required={column.is_required}
+                            />
+                          ) : isQueryField ? (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {column.column_label}
+                                {column.is_required && <span className="text-red-500 ml-1">*</span>}
+                              </label>
+                              <textarea
+                                value={newTaskData[column.column_key] || ''}
+                                onChange={(e) => setNewTaskData(prev => ({
+                                  ...prev,
+                                  [column.column_key]: e.target.value
+                                }))}
+                                rows={3}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
+                                placeholder="Enter your query or message..."
+                                required={column.is_required}
+                              />
+                            </div>
+                          ) : (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {column.column_label}
+                                {column.is_required && <span className="text-red-500 ml-1">*</span>}
+                              </label>
+                              <input
+                                type={column.column_type === 'number' ? 'number' : 'text'}
+                                value={newTaskData[column.column_key] || ''}
+                                onChange={(e) => setNewTaskData(prev => ({
+                                  ...prev,
+                                  [column.column_key]: e.target.value
+                                }))}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
+                                required={column.is_required}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
-                )
-              })}
-            </div>
-              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
-                <button
-                  onClick={() => {
-                    setEditingTask(null)
-                    setEditTaskData({})
-                  }}
-                  className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleUpdateTask}
-                  className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Update Task
-                </button>
+                  <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
+                    <button
+                      onClick={() => {
+                        setShowAddTask(false)
+                        setNewTaskData({})
+                      }}
+                      className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleAddTask}
+                      className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Add Task
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Tasks - Mobile Card View / Desktop Table View */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          {/* Desktop Table View */}
-          <div className="hidden lg:block overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  {columns.map((column) => (
-                    <th key={column.id} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {column.column_label}
-                    </th>
-                  ))}
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredTasks.length === 0 ? (
-                  <tr>
-                    <td colSpan={columns.length + 2} className="px-6 py-12 text-center text-gray-500">
-                      {tasks.length === 0 
-                        ? "No tasks found. Click 'Add Task' to create your first task."
-                        : "No tasks match your current filters. Try adjusting your search criteria."
-                      }
-                    </td>
-                  </tr>
-                ) : (
-                  filteredTasks.map((task) => (
-                    <tr key={task.id} className={task.is_completed ? 'bg-gray-50 opacity-75' : ''}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <button
-                          onClick={() => toggleTaskComplete(task.id, task.is_completed)}
-                          className={`p-1 rounded-full transition-colors ${
-                            task.is_completed 
-                              ? 'bg-green-100 text-green-600 hover:bg-green-200' 
-                              : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                          }`}
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
-                      </td>
+            {/* Edit Task Form */}
+            <div className={`transition-all duration-300 ease-in-out ${
+              editingTask ? 'max-h-[90vh] opacity-100 mb-6' : 'max-h-0 opacity-0'
+            }`}>
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="p-4 lg:p-6 max-h-[80vh] overflow-y-auto">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Task</h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {columns.map((column) => {
+                      // Special handling for specific fields
+                      const isUserField = 
+                        column.column_key === 'to_be_actioned_by' || 
+                        column.column_key === 'message_taken_by' || 
+                        column.column_key === 'assigned_to' ||
+                        column.column_key === 'message_take_by' ||
+                        column.column_key.includes('actioned_by') ||
+                        column.column_key.includes('taken_by') ||
+                        column.column_key.includes('assigned_to') ||
+                        column.column_label.toLowerCase().includes('actioned by') ||
+                        column.column_label.toLowerCase().includes('taken by') ||
+                        column.column_label.toLowerCase().includes('assigned to')
+                      const isDateField = column.column_type === 'date'
+                      const isQueryField = column.column_key === 'query'
+                      
+                      return (
+                        <div key={column.id} className={isQueryField ? 'lg:col-span-2 xl:col-span-3' : ''}>
+                          {column.column_type === 'boolean' ? (
+                            <div>
+                              <label className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  checked={editTaskData[column.column_key] || false}
+                                  onChange={(e) => setEditTaskData(prev => ({
+                                    ...prev,
+                                    [column.column_key]: e.target.checked
+                                  }))}
+                                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-2"
+                                />
+                                <span className="text-sm font-medium text-gray-700">
+                                  {column.column_label}
+                                  {column.is_required && <span className="text-red-500 ml-1">*</span>}
+                                </span>
+                              </label>
+                            </div>
+                          ) : isUserField ? (
+                            <UserSelector
+                              value={editTaskData[column.column_key] || ''}
+                              onChange={(value) => setEditTaskData(prev => ({
+                                ...prev,
+                                [column.column_key]: value
+                              }))}
+                              label={column.column_label}
+                              required={column.is_required}
+                              placeholder={`Select ${column.column_label.toLowerCase()}...`}
+                            />
+                          ) : isDateField ? (
+                            <DateInput
+                              value={editTaskData[column.column_key] || ''}
+                              onChange={(value) => setEditTaskData(prev => ({
+                                ...prev,
+                                [column.column_key]: value
+                              }))}
+                              label={column.column_label}
+                              required={column.is_required}
+                            />
+                          ) : isQueryField ? (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {column.column_label}
+                                {column.is_required && <span className="text-red-500 ml-1">*</span>}
+                              </label>
+                              <textarea
+                                value={editTaskData[column.column_key] || ''}
+                                onChange={(e) => setEditTaskData(prev => ({
+                                  ...prev,
+                                  [column.column_key]: e.target.value
+                                }))}
+                                rows={3}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
+                                placeholder="Enter your query or message..."
+                                required={column.is_required}
+                              />
+                            </div>
+                          ) : (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {column.column_label}
+                                {column.is_required && <span className="text-red-500 ml-1">*</span>}
+                              </label>
+                              <input
+                                type={column.column_type === 'number' ? 'number' : 'text'}
+                                value={editTaskData[column.column_key] || ''}
+                                onChange={(e) => setEditTaskData(prev => ({
+                                  ...prev,
+                                  [column.column_key]: e.target.value
+                                }))}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
+                                required={column.is_required}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
+                    <button
+                      onClick={() => {
+                        setEditingTask(null)
+                        setEditTaskData({})
+                      }}
+                      className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleUpdateTask}
+                      className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Update Task
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Tasks - Mobile Card View / Desktop Table View */}
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              {/* Desktop Table View */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
                       {columns.map((column) => (
-                        <td key={column.id} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {column.column_type === 'boolean' 
-                            ? (task.data[column.column_key] ? 'Yes' : 'No')
-                            : task.data[column.column_key] || '-'
+                        <th key={column.id} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          {column.column_label}
+                        </th>
+                      ))}
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredTasks.length === 0 ? (
+                      <tr>
+                        <td colSpan={columns.length + 2} className="px-6 py-12 text-center text-gray-500">
+                          {tasks.length === 0 
+                            ? "No tasks found. Click 'Add Task' to create your first task."
+                            : "No tasks match your current filters. Try adjusting your search criteria."
                           }
                         </td>
-                      ))}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex space-x-2">
-                          <button 
-                            onClick={() => handleEditTask(task)}
-                            className="text-blue-600 hover:text-blue-800 transition-colors"
-                            title="Edit task"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteTask(task.id)}
-                            className="text-red-600 hover:text-red-800 transition-colors"
-                            title="Delete task"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile Card View */}
-          <div className="lg:hidden">
-            {filteredTasks.length === 0 ? (
-              <div className="px-4 py-12 text-center text-gray-500">
-                {tasks.length === 0 
-                  ? "No tasks found. Click 'Add Task' to create your first task."
-                  : "No tasks match your current filters. Try adjusting your search criteria."
-                }
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-200">
-                {filteredTasks.map((task) => (
-                  <div key={task.id} className={`p-4 ${task.is_completed ? 'bg-gray-50 opacity-75' : ''}`}>
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center flex-1">
-                        <button
-                          onClick={() => toggleTaskComplete(task.id, task.is_completed)}
-                          className={`p-2 rounded-full transition-colors mr-3 ${
-                            task.is_completed 
-                              ? 'bg-green-100 text-green-600 hover:bg-green-200' 
-                              : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                          }`}
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
-                        <div className="flex-1 min-w-0">
-                          {columns.slice(0, 2).map((column) => (
-                            <div key={column.id} className="mb-1">
-                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                {column.column_label}:
-                              </span>
-                              <span className="ml-2 text-sm text-gray-900 truncate block">
-                                {column.column_type === 'boolean' 
-                                  ? (task.data[column.column_key] ? 'Yes' : 'No')
-                                  : task.data[column.column_key] || '-'
-                                }
-                              </span>
-                            </div>
+                      </tr>
+                    ) : (
+                      filteredTasks.map((task) => (
+                        <tr key={task.id} className={task.is_completed ? 'bg-gray-50 opacity-75' : ''}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <button
+                              onClick={() => toggleTaskComplete(task.id, task.is_completed)}
+                              className={`p-1 rounded-full transition-colors ${
+                                task.is_completed 
+                                  ? 'bg-green-100 text-green-600 hover:bg-green-200' 
+                                  : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                              }`}
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                          </td>
+                          {columns.map((column) => (
+                            <td key={column.id} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {column.column_type === 'boolean' 
+                                ? (task.data[column.column_key] ? 'Yes' : 'No')
+                                : task.data[column.column_key] || '-'
+                              }
+                            </td>
                           ))}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div className="flex space-x-2">
+                              <button 
+                                onClick={() => handleEditTask(task)}
+                                className="text-blue-600 hover:text-blue-800 transition-colors"
+                                title="Edit task"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteTask(task.id)}
+                                className="text-red-600 hover:text-red-800 transition-colors"
+                                title="Delete task"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="lg:hidden">
+                {filteredTasks.length === 0 ? (
+                  <div className="px-4 py-12 text-center text-gray-500">
+                    {tasks.length === 0 
+                      ? "No tasks found. Click 'Add Task' to create your first task."
+                      : "No tasks match your current filters. Try adjusting your search criteria."
+                    }
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-200">
+                    {filteredTasks.map((task) => (
+                      <div key={task.id} className={`p-4 ${task.is_completed ? 'bg-gray-50 opacity-75' : ''}`}>
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center flex-1">
+                            <button
+                              onClick={() => toggleTaskComplete(task.id, task.is_completed)}
+                              className={`p-2 rounded-full transition-colors mr-3 ${
+                                task.is_completed 
+                                  ? 'bg-green-100 text-green-600 hover:bg-green-200' 
+                                  : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                              }`}
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                            <div className="flex-1 min-w-0">
+                              {columns.slice(0, 2).map((column) => (
+                                <div key={column.id} className="mb-1">
+                                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                    {column.column_label}:
+                                  </span>
+                                  <span className="ml-2 text-sm text-gray-900 truncate block">
+                                    {column.column_type === 'boolean' 
+                                      ? (task.data[column.column_key] ? 'Yes' : 'No')
+                                      : task.data[column.column_key] || '-'
+                                    }
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex space-x-2 ml-2">
+                            <button 
+                              onClick={() => handleEditTask(task)}
+                              className="text-blue-600 hover:text-blue-800 transition-colors p-1"
+                              title="Edit task"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteTask(task.id)}
+                              className="text-red-600 hover:text-red-800 transition-colors p-1"
+                              title="Delete task"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex space-x-2 ml-2">
-                        <button 
-                          onClick={() => handleEditTask(task)}
-                          className="text-blue-600 hover:text-blue-800 transition-colors p-1"
-                          title="Edit task"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteTask(task.id)}
-                          className="text-red-600 hover:text-red-800 transition-colors p-1"
-                          title="Delete task"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                    
-                    {/* Additional fields */}
-                    {columns.slice(2).map((column) => (
-                      <div key={column.id} className="mb-2">
-                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                          {column.column_label}:
-                        </span>
-                        <span className="ml-2 text-sm text-gray-900 block break-words">
-                          {column.column_type === 'boolean' 
-                            ? (task.data[column.column_key] ? 'Yes' : 'No')
-                            : task.data[column.column_key] || '-'
-                          }
-                        </span>
+                        
+                        {/* Additional fields */}
+                        {columns.slice(2).map((column) => (
+                          <div key={column.id} className="mb-2">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                              {column.column_label}:
+                            </span>
+                            <span className="ml-2 text-sm text-gray-900 block break-words">
+                              {column.column_type === 'boolean' 
+                                ? (task.data[column.column_key] ? 'Yes' : 'No')
+                                : task.data[column.column_key] || '-'
+                              }
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     ))}
                   </div>
-                ))}
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
-        </div>
-      </div>
 
-      {/* Edit Sheet Modal */}
-      {sheet && (
-        <EditSheetModal
-          isOpen={showEditModal}
-          onClose={() => setShowEditModal(false)}
-          sheetId={sheet.id}
-          sheetType={sheet.type}
-          currentName={sheet.name}
-          onSuccess={() => {
-            loadSheetData()
-            setShowEditModal(false)
-          }}
+        {/* Edit Sheet Modal */}
+        {sheet && (
+          <EditSheetModal
+            isOpen={showEditModal}
+            onClose={() => setShowEditModal(false)}
+            sheetId={sheet.id}
+            sheetType={sheet.type}
+            currentName={sheet.name}
+            onSuccess={() => {
+              loadSheetData()
+              setShowEditModal(false)
+            }}
+          />
+        )}
+        
+        {/* Mobile Bottom Navigation */}
+        <BottomNav
+          activeTab={sheet?.type || 'monthly'}
+          onTabChange={(tab) => router.push(`/dashboard?tab=${tab}`)}
+          navigation={navigation}
+          profile={profile}
+          onSignOut={handleSignOut}
         />
-      )}
-      {/* Mobile Bottom Navigation */}
-      <BottomNav
-        activeTab={sheet?.type || 'monthly'}
-        onTabChange={(tab) => router.push(`/dashboard?tab=${tab}`)}
-        navigation={navigation}
-      />
+      </div>
     </div>
   )
 } 

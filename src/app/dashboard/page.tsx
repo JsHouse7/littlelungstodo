@@ -12,7 +12,11 @@ import {
   FileText,
   Clock,
   CheckSquare,
-  Plus
+  Plus,
+  User,
+  Settings,
+  LogOut,
+  ChevronDown
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -32,24 +36,202 @@ interface Sheet {
   updated_at: string
 }
 
-function BottomNav({ activeTab, onTabChange, navigation }: { activeTab: SheetType, onTabChange: (tab: SheetType) => void, navigation: any[] }) {
+// Mobile Header Component
+function MobileHeader({ profile, onSignOut }: { profile: any, onSignOut: () => void }) {
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const router = useRouter()
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex justify-around items-center h-16 lg:hidden">
-      {navigation.map((item) => {
-        const Icon = item.icon
-        const isActive = activeTab === item.key
-        return (
-          <button
-            key={item.key}
-            onClick={() => onTabChange(item.key)}
-            className={`flex flex-col items-center justify-center flex-1 h-full focus:outline-none ${isActive ? 'text-blue-600' : 'text-gray-500 hover:text-blue-700'}`}
-          >
-            <Icon className={`w-6 h-6 mb-1 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
-            <span className="text-xs font-medium">{item.name.split(' ')[0]}</span>
-          </button>
-        )
-      })}
-    </nav>
+    <div className="lg:hidden bg-white border-b border-gray-200">
+      <div className="px-4 py-3">
+        <div className="flex items-center justify-between">
+          {/* App Logo/Title */}
+          <div className="flex items-center">
+            <div className="bg-blue-600 p-2 rounded-lg">
+              <CheckSquare className="w-5 h-5 text-white" />
+            </div>
+            <div className="ml-3">
+              <h1 className="text-lg font-bold text-gray-900">Little Lungs</h1>
+            </div>
+          </div>
+
+          {/* User Menu */}
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center space-x-2 p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+            >
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <User className="w-4 h-4 text-blue-600" />
+              </div>
+              <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Dropdown Menu */}
+            {showUserMenu && (
+              <>
+                {/* Backdrop */}
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setShowUserMenu(false)}
+                />
+                
+                {/* Menu */}
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                  {/* User Info */}
+                  <div className="px-4 py-3 border-b border-gray-200">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {profile.full_name || profile.email}
+                    </p>
+                    <p className="text-xs text-gray-500 capitalize truncate">
+                      {profile.role} {profile.department && `• ${profile.department}`}
+                    </p>
+                  </div>
+
+                  {/* Menu Items */}
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false)
+                        router.push('/settings')
+                      }}
+                      className="w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      <Settings className="w-4 h-4 mr-3 text-gray-400" />
+                      Settings & Profile
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false)
+                        onSignOut()
+                      }}
+                      className="w-full flex items-center px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4 mr-3 text-red-400" />
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Enhanced Bottom Navigation with More Button
+function BottomNav({ 
+  activeTab, 
+  onTabChange, 
+  navigation, 
+  profile, 
+  onSignOut 
+}: { 
+  activeTab: SheetType
+  onTabChange: (tab: SheetType) => void
+  navigation: any[]
+  profile: any
+  onSignOut: () => void
+}) {
+  const [showMoreMenu, setShowMoreMenu] = useState(false)
+  const router = useRouter()
+
+  return (
+    <>
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex justify-around items-center h-16 lg:hidden">
+        {/* Main navigation items (first 3) */}
+        {navigation.slice(0, 3).map((item) => {
+          const Icon = item.icon
+          const isActive = activeTab === item.key
+          return (
+            <button
+              key={item.key}
+              onClick={() => onTabChange(item.key)}
+              className={`flex flex-col items-center justify-center flex-1 h-full focus:outline-none ${isActive ? 'text-blue-600' : 'text-gray-500 hover:text-blue-700'}`}
+            >
+              <Icon className={`w-6 h-6 mb-1 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
+              <span className="text-xs font-medium">{item.name.split(' ')[0]}</span>
+            </button>
+          )
+        })}
+
+        {/* More button */}
+        <button
+          onClick={() => setShowMoreMenu(!showMoreMenu)}
+          className={`flex flex-col items-center justify-center flex-1 h-full focus:outline-none ${showMoreMenu ? 'text-blue-600' : 'text-gray-500 hover:text-blue-700'}`}
+        >
+          <Menu className={`w-6 h-6 mb-1 ${showMoreMenu ? 'text-blue-600' : 'text-gray-400'}`} />
+          <span className="text-xs font-medium">More</span>
+        </button>
+      </nav>
+
+      {/* More Menu Overlay */}
+      {showMoreMenu && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-25 z-40 lg:hidden" 
+            onClick={() => setShowMoreMenu(false)}
+          />
+          
+          {/* Menu Panel */}
+          <div className="fixed bottom-16 left-4 right-4 bg-white rounded-lg shadow-lg border border-gray-200 z-50 lg:hidden">
+            {/* User Info Header */}
+            <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <User className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {profile.full_name || profile.email}
+                  </p>
+                  <p className="text-xs text-gray-500 capitalize truncate">
+                    {profile.role} {profile.department && `• ${profile.department}`}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Menu Items */}
+            <div className="py-2">
+              <button
+                onClick={() => {
+                  setShowMoreMenu(false)
+                  router.push('/settings')
+                }}
+                className="w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <Settings className="w-5 h-5 mr-3 text-gray-400" />
+                <div className="text-left">
+                  <div className="font-medium">Settings & Profile</div>
+                  <div className="text-xs text-gray-500">
+                    {profile.role === 'admin' ? 'Manage profile and users' : 'Manage your profile'}
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowMoreMenu(false)
+                  onSignOut()
+                }}
+                className="w-full flex items-center px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+              >
+                <LogOut className="w-5 h-5 mr-3 text-red-400" />
+                <div className="text-left">
+                  <div className="font-medium">Sign Out</div>
+                  <div className="text-xs text-red-500">End your session</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </>
   )
 }
 
@@ -110,6 +292,11 @@ function DashboardContent() {
     }
   }, [user, loadSheets])
 
+  const handleSignOut = async () => {
+    await signOut()
+    router.push('/login')
+  }
+
   if (loading || !user || !profile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -145,8 +332,6 @@ function DashboardContent() {
     },
   ]
 
-
-
   return (
     <div className="h-screen flex bg-gray-50">
       {/* Mobile sidebar removed, only desktop sidebar remains */}
@@ -160,9 +345,12 @@ function DashboardContent() {
           onTabChange={setActiveTab}
         />
       </div>
+      
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden pb-16 lg:pb-0"> {/* Add pb-16 for mobile bottom nav space */}
-        {/* Mobile header removed */}
+        {/* Mobile Header */}
+        <MobileHeader profile={profile} onSignOut={handleSignOut} />
+        
         {/* Content area */}
         <main className={`flex-1 overflow-y-auto p-4 lg:p-8 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}>
           <div className="max-w-7xl mx-auto">
@@ -177,9 +365,17 @@ function DashboardContent() {
             />
           </div>
         </main>
+        
         {/* Mobile Bottom Navigation */}
-        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} navigation={navigation} />
+        <BottomNav 
+          activeTab={activeTab} 
+          onTabChange={setActiveTab} 
+          navigation={navigation}
+          profile={profile}
+          onSignOut={handleSignOut}
+        />
       </div>
+      
       {/* Create Sheet Modal */}
       <CreateSheetModal
         isOpen={showCreateModal}
