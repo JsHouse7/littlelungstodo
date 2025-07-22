@@ -23,7 +23,12 @@ import {
   X,
   Check,
   AlertTriangle,
-  Home
+  Home,
+  Trash2,
+  Key,
+  UserX,
+  UserCheck,
+  MoreVertical
 } from 'lucide-react'
 
 export default function SettingsPage() {
@@ -50,6 +55,13 @@ export default function SettingsPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [saveLoading, setSaveLoading] = useState(false)
+  const [userMenuOpen, setUserMenuOpen] = useState<string | null>(null)
+  const [confirmAction, setConfirmAction] = useState<{
+    userId: string
+    action: string
+    userEmail: string
+    userName: string
+  } | null>(null)
   
   // Create supabase client once to prevent recreation on every render
   const supabase = useMemo(() => createClient(), [])
@@ -213,23 +225,50 @@ export default function SettingsPage() {
     }
   }
 
-  const handleToggleUserStatus = async (userId: string, currentStatus: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_active: !currentStatus })
-        .eq('id', userId)
+  const handleUserAction = async (action: string, userId: string, email: string) => {
+    setSaveLoading(true)
+    setError('')
+    setSuccess('')
+    setUserMenuOpen(null)
 
-      if (error) {
-        setError('Failed to update user status: ' + error.message)
-      } else {
-        setSuccess(`User ${!currentStatus ? 'activated' : 'deactivated'} successfully!`)
-        loadUsers()
-        setTimeout(() => setSuccess(''), 3000)
+    try {
+      const response = await fetch('/api/manage-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action,
+          userId,
+          email
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        setError(result.error || 'Failed to perform action')
+        return
       }
+
+      setSuccess(result.message)
+      loadUsers()
+      setTimeout(() => setSuccess(''), 5000)
+
     } catch (err) {
-      console.error('Error toggling user status:', err)
+      console.error('Error performing user action:', err)
       setError('An unexpected error occurred')
+    } finally {
+      setSaveLoading(false)
+      setConfirmAction(null)
+    }
+  }
+
+  const handleToggleUserStatus = async (userId: string, currentStatus: boolean) => {
+    const action = currentStatus ? 'hibernate_user' : 'activate_user'
+    const userItem = users.find(u => u.id === userId)
+    if (userItem) {
+      await handleUserAction(action, userId, userItem.email)
     }
   }
 
@@ -664,7 +703,7 @@ export default function SettingsPage() {
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              <div className="flex space-x-2">
+                              <div className="flex items-center space-x-2">
                                 <button
                                   onClick={() => startEditingUser(userItem)}
                                   className="text-blue-600 hover:text-blue-800 transition-colors"
@@ -673,17 +712,79 @@ export default function SettingsPage() {
                                   <Edit className="w-4 h-4" />
                                 </button>
                                 {userItem.id !== user?.id && (
-                                  <button
-                                    onClick={() => handleToggleUserStatus(userItem.id, userItem.is_active)}
-                                    className={`transition-colors ${
-                                      userItem.is_active 
-                                        ? 'text-red-600 hover:text-red-800' 
-                                        : 'text-green-600 hover:text-green-800'
-                                    }`}
-                                    title={userItem.is_active ? 'Deactivate user' : 'Activate user'}
-                                  >
-                                    {userItem.is_active ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
-                                  </button>
+                                  <div className="relative">
+                                    <button
+                                      onClick={() => setUserMenuOpen(userMenuOpen === userItem.id ? null : userItem.id)}
+                                      className="text-gray-600 hover:text-gray-800 transition-colors"
+                                      title="More actions"
+                                    >
+                                      <MoreVertical className="w-4 h-4" />
+                                    </button>
+                                    
+                                    {userMenuOpen === userItem.id && (
+                                      <>
+                                        {/* Backdrop */}
+                                        <div 
+                                          className="fixed inset-0 z-40" 
+                                          onClick={() => setUserMenuOpen(null)}
+                                        />
+                                        
+                                        {/* Menu */}
+                                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                                          <div className="py-1">
+                                            <button
+                                              onClick={() => {
+                                                setUserMenuOpen(null)
+                                                handleUserAction('reset_password', userItem.id, userItem.email)
+                                              }}
+                                              className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                            >
+                                              <Key className="w-4 h-4 mr-3 text-gray-400" />
+                                              Reset Password
+                                            </button>
+                                            
+                                            <button
+                                              onClick={() => {
+                                                setUserMenuOpen(null)
+                                                handleToggleUserStatus(userItem.id, userItem.is_active)
+                                              }}
+                                              className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                            >
+                                              {userItem.is_active ? (
+                                                <>
+                                                  <UserX className="w-4 h-4 mr-3 text-gray-400" />
+                                                  Hibernate User
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <UserCheck className="w-4 h-4 mr-3 text-gray-400" />
+                                                  Activate User
+                                                </>
+                                              )}
+                                            </button>
+
+                                            <div className="border-t border-gray-100 my-1"></div>
+                                            
+                                            <button
+                                              onClick={() => {
+                                                setUserMenuOpen(null)
+                                                setConfirmAction({
+                                                  userId: userItem.id,
+                                                  action: 'delete_user',
+                                                  userEmail: userItem.email,
+                                                  userName: userItem.full_name || userItem.email
+                                                })
+                                              }}
+                                              className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                            >
+                                              <Trash2 className="w-4 h-4 mr-3 text-red-400" />
+                                              Delete User
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
                                 )}
                               </div>
                             </td>
@@ -741,6 +842,51 @@ export default function SettingsPage() {
             </div>
           )}
         </div>
+
+        {/* Confirmation Dialog */}
+        {confirmAction && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+              <div className="p-6">
+                <div className="flex items-center mb-4">
+                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900">
+                    Confirm User Deletion
+                  </h3>
+                </div>
+                
+                <p className="text-sm text-gray-600 mb-6">
+                  Are you sure you want to permanently delete <strong>{confirmAction.userName}</strong>? 
+                  This action cannot be undone and will remove:
+                </p>
+                
+                <ul className="text-sm text-gray-600 mb-6 space-y-1">
+                  <li>• User account and login access</li>
+                  <li>• All associated profile data</li>
+                  <li>• Task assignments (tasks will remain)</li>
+                </ul>
+                
+                <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
+                  <button
+                    onClick={() => setConfirmAction(null)}
+                    className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleUserAction(confirmAction.action, confirmAction.userId, confirmAction.userEmail)}
+                    disabled={saveLoading}
+                    className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {saveLoading ? 'Deleting...' : 'Delete User'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </MobileLayout>
   )
