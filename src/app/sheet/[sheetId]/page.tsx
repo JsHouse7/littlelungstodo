@@ -469,7 +469,7 @@ export default function SheetPage() {
         </div>
         
         {/* Content area */}
-        <main className={`flex-1 overflow-y-auto transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-0' : 'lg:ml-0'}`}>
+        <main className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-0' : 'lg:ml-0'}`}>
           {/* Main Content (header, filters, add/edit forms, task list, etc.) */}
           <div className="bg-white border-b border-gray-200 w-full">
         <div className="px-4 sm:px-6 lg:px-8">
@@ -521,7 +521,7 @@ export default function SheetPage() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto w-full">
+        <div className="w-full">
           <div className="px-2 sm:px-4 lg:px-8 py-4 sm:py-6 flex flex-col gap-y-4 w-full max-w-full">
             {/* Filters */}
             {showFilters && (
@@ -587,10 +587,10 @@ export default function SheetPage() {
 
             {/* Add Task Form */}
             <div className={`transition-all duration-300 ease-in-out ${
-              showAddTask ? 'max-h-[90vh] opacity-100 mb-4' : 'max-h-0 opacity-0'
+              showAddTask ? 'opacity-100 mb-4' : 'max-h-0 opacity-0'
             } w-full`}> {/* Ensure full width on mobile */}
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden w-full">
-                <div className="p-4 lg:p-6 max-h-[80vh] overflow-y-auto w-full">
+                <div className="p-4 lg:p-6 w-full">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Task</h3>
                   <div className="grid grid-cols-1 gap-4 w-full"> {/* Always single column on mobile */}
                     {columns.map((column) => {
@@ -713,10 +713,10 @@ export default function SheetPage() {
 
             {/* Edit Task Form */}
             <div className={`transition-all duration-300 ease-in-out ${
-              editingTask ? 'max-h-[90vh] opacity-100 mb-4' : 'max-h-0 opacity-0'
+              editingTask ? 'opacity-100 mb-4' : 'max-h-0 opacity-0'
             } w-full`}> {/* Ensure full width on mobile */}
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden w-full">
-                <div className="p-4 lg:p-6 max-h-[80vh] overflow-y-auto w-full">
+                <div className="p-4 lg:p-6 w-full">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Task</h3>
                   <div className="grid grid-cols-1 gap-4 w-full"> {/* Always single column on mobile */}
                     {columns.map((column) => {
@@ -846,7 +846,7 @@ export default function SheetPage() {
               ) : (
                 <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
+                    <table className="min-w-full divide-y divide-gray-200 relative">
                       <thead className="bg-gray-50">
                         <tr>
                           <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -873,7 +873,7 @@ export default function SheetPage() {
                                   console.log('Status toggle clicked!')
                                   toggleTaskComplete(task.id, task.is_completed)
                                 }}
-                                className={`p-2 rounded-full transition-colors cursor-pointer ${
+                                className={`p-2 rounded-full transition-colors cursor-pointer relative z-10 ${
                                   task.is_completed 
                                     ? 'bg-green-100 text-green-600 hover:bg-green-200' 
                                     : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
@@ -895,7 +895,7 @@ export default function SheetPage() {
                               </td>
                             ))}
                             <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              <div className="flex space-x-2">
+                              <div className="flex space-x-2 relative z-10">
                                 <button 
                                   onClick={(e) => {
                                     e.preventDefault()
