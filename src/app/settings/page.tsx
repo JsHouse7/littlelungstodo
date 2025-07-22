@@ -130,53 +130,40 @@ export default function SettingsPage() {
     setSuccess('')
 
     try {
-      // First, invite the user via Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(
-        userFormData.email,
-        {
-          data: {
-            full_name: userFormData.full_name,
-            role: userFormData.role,
-            department: userFormData.department,
-            phone: userFormData.phone
-          }
-        }
-      )
+      // Call the API endpoint to invite the user
+      const response = await fetch('/api/invite-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: userFormData.email,
+          full_name: userFormData.full_name,
+          role: userFormData.role,
+          department: userFormData.department,
+          phone: userFormData.phone
+        })
+      })
 
-      if (authError) {
-        setError('Failed to invite user: ' + authError.message)
+      const result = await response.json()
+
+      if (!response.ok) {
+        setError(result.error || 'Failed to invite user')
         return
       }
 
-      // Create the profile record
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([{
-          id: authData.user?.id,
-          email: userFormData.email,
-          full_name: userFormData.full_name.trim() || null,
-          role: userFormData.role,
-          department: userFormData.department.trim() || null,
-          phone: userFormData.phone.trim() || null,
-          is_active: true
-        }])
+      setSuccess('User invited successfully! They will receive an email invitation.')
+      setUserFormData({
+        email: '',
+        full_name: '',
+        role: 'staff',
+        department: '',
+        phone: ''
+      })
+      setShowAddUser(false)
+      loadUsers()
+      setTimeout(() => setSuccess(''), 5000)
 
-      if (profileError) {
-        console.error('Profile creation error:', profileError)
-        setError('User invited but profile creation failed: ' + profileError.message)
-      } else {
-        setSuccess('User invited successfully! They will receive an email invitation.')
-        setUserFormData({
-          email: '',
-          full_name: '',
-          role: 'staff',
-          department: '',
-          phone: ''
-        })
-        setShowAddUser(false)
-        loadUsers()
-        setTimeout(() => setSuccess(''), 5000)
-      }
     } catch (err) {
       console.error('Error inviting user:', err)
       setError('An unexpected error occurred')
