@@ -587,10 +587,10 @@ export default function SheetPage() {
 
             {/* Add Task Form */}
             <div className={`transition-all duration-300 ease-in-out ${
-              showAddTask ? 'opacity-100 mb-4' : 'max-h-0 opacity-0'
-            } w-full`}> {/* Ensure full width on mobile */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden w-full">
-                <div className="p-4 lg:p-6 w-full">
+              showAddTask ? 'opacity-100 mb-4' : 'max-h-0 opacity-0 overflow-hidden'
+            } w-full relative z-30`}> {/* Ensure full width on mobile */}
+              <div className="bg-white rounded-lg border border-gray-200 shadow-lg w-full relative">
+                <div className="p-4 lg:p-6 w-full relative z-10">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Task</h3>
                   <div className="grid grid-cols-1 gap-4 w-full"> {/* Always single column on mobile */}
                     {columns.map((column) => {
@@ -621,7 +621,7 @@ export default function SheetPage() {
                                     ...prev,
                                     [column.column_key]: e.target.checked
                                   }))}
-                                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-2"
+                                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-2 relative z-10 cursor-pointer"
                                 />
                                 <span className="text-sm font-medium text-gray-700">
                                   {column.column_label}
@@ -663,7 +663,7 @@ export default function SheetPage() {
                                   [column.column_key]: e.target.value
                                 }))}
                                 rows={3}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 relative z-10"
                                 placeholder="Enter your query or message..."
                                 required={column.is_required}
                               />
@@ -681,7 +681,7 @@ export default function SheetPage() {
                                   ...prev,
                                   [column.column_key]: e.target.value
                                 }))}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 relative z-10"
                                 required={column.is_required}
                               />
                             </div>
@@ -713,10 +713,10 @@ export default function SheetPage() {
 
             {/* Edit Task Form */}
             <div className={`transition-all duration-300 ease-in-out ${
-              editingTask ? 'opacity-100 mb-4' : 'max-h-0 opacity-0'
-            } w-full`}> {/* Ensure full width on mobile */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden w-full">
-                <div className="p-4 lg:p-6 w-full">
+              editingTask ? 'opacity-100 mb-4' : 'max-h-0 opacity-0 overflow-hidden'
+            } w-full relative z-30`}> {/* Ensure full width on mobile */}
+              <div className="bg-white rounded-lg border border-gray-200 shadow-lg w-full relative">
+                <div className="p-4 lg:p-6 w-full relative z-10">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Task</h3>
                   <div className="grid grid-cols-1 gap-4 w-full"> {/* Always single column on mobile */}
                     {columns.map((column) => {
@@ -740,15 +740,15 @@ export default function SheetPage() {
                           {column.column_type === 'boolean' ? (
                             <div>
                               <label className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  checked={editTaskData[column.column_key] || false}
-                                  onChange={(e) => setEditTaskData(prev => ({
-                                    ...prev,
-                                    [column.column_key]: e.target.checked
-                                  }))}
-                                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-2"
-                                />
+                                                              <input
+                                type="checkbox"
+                                checked={editTaskData[column.column_key] || false}
+                                onChange={(e) => setEditTaskData(prev => ({
+                                  ...prev,
+                                  [column.column_key]: e.target.checked
+                                }))}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-2 relative z-10 cursor-pointer"
+                              />
                                 <span className="text-sm font-medium text-gray-700">
                                   {column.column_label}
                                   {column.is_required && <span className="text-red-500 ml-1">*</span>}
@@ -789,7 +789,7 @@ export default function SheetPage() {
                                   [column.column_key]: e.target.value
                                 }))}
                                 rows={3}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 relative z-10"
                                 placeholder="Enter your query or message..."
                                 required={column.is_required}
                               />
@@ -807,7 +807,7 @@ export default function SheetPage() {
                                   ...prev,
                                   [column.column_key]: e.target.value
                                 }))}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 relative z-10"
                                 required={column.is_required}
                               />
                             </div>
