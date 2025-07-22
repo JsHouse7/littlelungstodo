@@ -86,6 +86,7 @@ export default function SheetPage() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [editTaskData, setEditTaskData] = useState<Record<string, any>>({})
+  const [showUserMenu, setShowUserMenu] = useState(false)
   
   // Create supabase client once to prevent recreation on every render
   const supabase = useMemo(() => createClient(), [])
@@ -328,22 +329,104 @@ export default function SheetPage() {
     )
   }
 
-  // Compose header and bottom nav for MobileLayout
-  const mobileHeader = <MobileHeader profile={profile} onSignOut={handleSignOut} />;
-  const bottomNav = (
-    <BottomNav
-      activeTab={sheet?.type || 'monthly'}
-      onTabChange={(tab) => router.push(`/dashboard?tab=${tab}`)}
-      navigation={navigation}
-      profile={profile}
-      onSignOut={handleSignOut}
-    />
-  );
-
   return (
-    <MobileLayout header={mobileHeader} bottomNav={bottomNav}>
-      {/* Main Content (header, filters, add/edit forms, task list, etc.) */}
-      <div className="bg-white border-b border-gray-200 w-full">
+    <div className="h-screen flex bg-gray-50">
+      {/* Desktop sidebar */}
+      <div className={`hidden lg:flex lg:flex-shrink-0 transition-all duration-300`}>
+        <Sidebar 
+          profile={profile!}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          activeTab={sheet?.type || 'monthly'}
+          onTabChange={(tab) => router.push(`/dashboard?tab=${tab}`)}
+        />
+      </div>
+      
+      {/* Main content */}
+      <div className="flex-1 flex flex-col overflow-hidden pb-16 lg:pb-0">
+        {/* Mobile Header */}
+        <div className="lg:hidden bg-white border-b border-gray-200">
+          <div className="px-4 py-3">
+            <div className="flex items-center justify-between">
+              {/* App Logo/Title */}
+              <div className="flex items-center">
+                <div className="bg-blue-600 p-2 rounded-lg">
+                  <CheckSquare className="w-5 h-5 text-white" />
+                </div>
+                <div className="ml-3">
+                  <h1 className="text-lg font-bold text-gray-900">Little Lungs</h1>
+                </div>
+              </div>
+
+              {/* User Menu */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center space-x-2 p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Dropdown Menu */}
+                {showUserMenu && (
+                  <>
+                    {/* Backdrop */}
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setShowUserMenu(false)}
+                    />
+                    
+                    {/* Menu */}
+                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                      {/* User Info */}
+                      <div className="px-4 py-3 border-b border-gray-200">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {profile?.full_name || profile?.email}
+                        </p>
+                        <p className="text-xs text-gray-500 capitalize truncate">
+                          {profile?.role} {profile?.department && `• ${profile.department}`}
+                        </p>
+                      </div>
+
+                      {/* Menu Items */}
+                      <div className="py-1">
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false)
+                            router.push('/settings')
+                          }}
+                          className="w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        >
+                          <Settings className="w-4 h-4 mr-3 text-gray-400" />
+                          Settings & Profile
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false)
+                            handleSignOut()
+                          }}
+                          className="w-full flex items-center px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4 mr-3 text-red-400" />
+                          Sign Out
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Content area */}
+        <main className={`flex-1 overflow-y-auto transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-0' : 'lg:ml-0'}`}>
+          {/* Main Content (header, filters, add/edit forms, task list, etc.) */}
+          <div className="bg-white border-b border-gray-200 w-full">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-4 gap-y-2">
             <div className="flex items-center w-full sm:w-auto">
@@ -789,24 +872,33 @@ export default function SheetPage() {
           </div>
         </div>
 
-        {/* Edit Sheet Modal */}
-        {sheet && (
-          <EditSheetModal
-            isOpen={showEditModal}
-            onClose={() => setShowEditModal(false)}
-            sheetId={sheet.id}
-            sheetType={sheet.type}
-            currentName={sheet.name}
-            onSuccess={() => {
-              loadSheetData()
-              setShowEditModal(false)
-            }}
-          />
-        )}
-        
+          </div>
+        </main>
+
         {/* Mobile Bottom Navigation */}
-        {/* This block is now handled by MobileLayout */}
-      </div> {/* Close main content wrapper */}
-    </MobileLayout>
+        <BottomNav
+          activeTab={sheet?.type || 'monthly'}
+          onTabChange={(tab) => router.push(`/dashboard?tab=${tab}`)}
+          navigation={navigation}
+          profile={profile}
+          onSignOut={handleSignOut}
+        />
+      </div>
+
+      {/* Edit Sheet Modal */}
+      {sheet && (
+        <EditSheetModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          sheetId={sheet.id}
+          sheetType={sheet.type}
+          currentName={sheet.name}
+          onSuccess={() => {
+            loadSheetData()
+            setShowEditModal(false)
+          }}
+        />
+      )}
+    </div>
   )
 } 
