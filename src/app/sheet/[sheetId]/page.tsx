@@ -709,77 +709,81 @@ export default function SheetPage() {
               </div>
             </div>
 
-            {/* Tasks - Mobile Card View / Desktop Table View */}
-            <div className="flex flex-col gap-y-4 w-full">
+            {/* Tasks Table */}
+            <div className="w-full">
               {filteredTasks.length === 0 ? (
                 <div className="bg-white rounded-lg border border-gray-200 p-6 text-center text-gray-500">
                   No tasks found.
                 </div>
               ) : (
-                filteredTasks.map((task) => (
-                  <div key={task.id} className="bg-white rounded-lg border border-gray-200 p-4 flex flex-col gap-y-2 w-full">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center flex-1">
-                        <button
-                          onClick={() => toggleTaskComplete(task.id, task.is_completed)}
-                          className={`p-2 rounded-full transition-colors mr-3 ${
-                            task.is_completed 
-                              ? 'bg-green-100 text-green-600 hover:bg-green-200' 
-                              : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                          }`}
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
-                        <div className="flex-1 min-w-0">
-                          {columns.slice(0, 2).map((column) => (
-                            <div key={column.id} className="mb-1">
-                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                {column.column_label}:
-                              </span>
-                              <span className="ml-2 text-sm text-gray-900 truncate block">
-                                {column.column_type === 'boolean' 
-                                  ? (task.data[column.column_key] ? 'Yes' : 'No')
-                                  : task.data[column.column_key] || '-'
-                                }
-                              </span>
-                            </div>
+                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          {columns.map((column) => (
+                            <th key={column.id} scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              {column.column_label}
+                            </th>
                           ))}
-                        </div>
-                      </div>
-                      <div className="flex space-x-2 ml-2">
-                        <button 
-                          onClick={() => handleEditTask(task)}
-                          className="text-blue-600 hover:text-blue-800 transition-colors p-1"
-                          title="Edit task"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteTask(task.id)}
-                          className="text-red-600 hover:text-red-800 transition-colors p-1"
-                          title="Delete task"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                    
-                    {/* Additional fields */}
-                    {columns.slice(2).map((column) => (
-                      <div key={column.id} className="mb-2">
-                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                          {column.column_label}:
-                        </span>
-                        <span className="ml-2 text-sm text-gray-900 block break-words">
-                          {column.column_type === 'boolean' 
-                            ? (task.data[column.column_key] ? 'Yes' : 'No')
-                            : task.data[column.column_key] || '-'
-                          }
-                        </span>
-                      </div>
-                    ))}
+                          <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredTasks.map((task) => (
+                          <tr key={task.id} className={`hover:bg-gray-50 ${task.is_completed ? 'bg-green-50' : ''}`}>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <button
+                                onClick={() => toggleTaskComplete(task.id, task.is_completed)}
+                                className={`p-2 rounded-full transition-colors ${
+                                  task.is_completed 
+                                    ? 'bg-green-100 text-green-600 hover:bg-green-200' 
+                                    : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                                }`}
+                                title={task.is_completed ? 'Mark as incomplete' : 'Mark as complete'}
+                              >
+                                <Check className="w-4 h-4" />
+                              </button>
+                            </td>
+                            {columns.map((column) => (
+                              <td key={column.id} className="px-4 py-4 text-sm text-gray-900">
+                                <div className="max-w-xs break-words">
+                                  {column.column_type === 'boolean' 
+                                    ? (task.data[column.column_key] ? 'Yes' : 'No')
+                                    : task.data[column.column_key] || '-'
+                                  }
+                                </div>
+                              </td>
+                            ))}
+                            <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              <div className="flex space-x-2">
+                                <button 
+                                  onClick={() => handleEditTask(task)}
+                                  className="text-blue-600 hover:text-blue-800 transition-colors p-1"
+                                  title="Edit task"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                <button 
+                                  onClick={() => handleDeleteTask(task.id)}
+                                  className="text-red-600 hover:text-red-800 transition-colors p-1"
+                                  title="Delete task"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                ))
+                </div>
               )}
             </div>
           </div>
