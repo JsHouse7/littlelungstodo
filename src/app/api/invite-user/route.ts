@@ -52,6 +52,12 @@ export async function POST(request: Request) {
       }
     )
 
+    // Get the correct redirect URL based on environment
+    const isProduction = process.env.NODE_ENV === 'production'
+    const redirectTo = isProduction 
+      ? process.env.NEXT_PUBLIC_SITE_URL || 'https://littlelungstodo.vercel.app'
+      : 'http://localhost:3000'
+
     // Invite the user via Supabase Auth
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
       email,
@@ -61,7 +67,8 @@ export async function POST(request: Request) {
           role,
           department,
           phone
-        }
+        },
+        redirectTo: redirectTo
       }
     )
 
