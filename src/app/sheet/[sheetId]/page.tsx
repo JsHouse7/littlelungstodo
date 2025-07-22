@@ -198,6 +198,7 @@ export default function SheetPage() {
   }
 
   const toggleTaskComplete = async (taskId: string, isCompleted: boolean) => {
+    console.log('Toggle task complete clicked:', taskId, 'current status:', isCompleted)
     try {
       const { error } = await supabase
         .from('tasks')
@@ -218,6 +219,7 @@ export default function SheetPage() {
   }
 
   const handleEditTask = (task: Task) => {
+    console.log('Edit task clicked:', task.id, task)
     setEditingTask(task)
     setEditTaskData(task.data)
   }
@@ -247,6 +249,7 @@ export default function SheetPage() {
   }
 
   const handleDeleteTask = async (taskId: string) => {
+    console.log('Delete task clicked:', taskId)
     if (!confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
       return
     }
@@ -822,13 +825,19 @@ export default function SheetPage() {
                           <tr key={task.id} className={`hover:bg-gray-50 ${task.is_completed ? 'bg-green-50' : ''}`}>
                             <td className="px-4 py-4 whitespace-nowrap">
                               <button
-                                onClick={() => toggleTaskComplete(task.id, task.is_completed)}
-                                className={`p-2 rounded-full transition-colors ${
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  console.log('Status toggle clicked!')
+                                  toggleTaskComplete(task.id, task.is_completed)
+                                }}
+                                className={`p-2 rounded-full transition-colors cursor-pointer ${
                                   task.is_completed 
                                     ? 'bg-green-100 text-green-600 hover:bg-green-200' 
                                     : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                                 }`}
                                 title={task.is_completed ? 'Mark as incomplete' : 'Mark as complete'}
+                                type="button"
                               >
                                 <Check className="w-4 h-4" />
                               </button>
@@ -846,16 +855,28 @@ export default function SheetPage() {
                             <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                               <div className="flex space-x-2">
                                 <button 
-                                  onClick={() => handleEditTask(task)}
-                                  className="text-blue-600 hover:text-blue-800 transition-colors p-1"
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    console.log('Edit button clicked!')
+                                    handleEditTask(task)
+                                  }}
+                                  className="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer"
                                   title="Edit task"
+                                  type="button"
                                 >
                                   <Edit className="w-4 h-4" />
                                 </button>
                                 <button 
-                                  onClick={() => handleDeleteTask(task.id)}
-                                  className="text-red-600 hover:text-red-800 transition-colors p-1"
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    console.log('Delete button clicked!')
+                                    handleDeleteTask(task.id)
+                                  }}
+                                  className="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer"
                                   title="Delete task"
+                                  type="button"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
