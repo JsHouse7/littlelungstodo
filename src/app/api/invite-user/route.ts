@@ -73,8 +73,11 @@ export async function POST(request: Request) {
       )
     }
 
-    // Create the profile record
-    const { error: profileInsertError } = await supabaseAdmin
+    // Try to create the profile record, first with is_active, then without if it fails
+    let profileInsertError = null
+    
+    // First attempt with is_active
+    const { error: profileError1 } = await supabaseAdmin
       .from('profiles')
       .insert([{
         id: authData.user?.id,
@@ -85,6 +88,26 @@ export async function POST(request: Request) {
         phone: phone?.trim() || null,
         is_active: true
       }])
+
+    if (profileError1) {
+      // If is_active column error, try without it
+      if (profileError1.message.includes('is_active') || profileError1.message.includes('schema cache')) {
+        console.log('is_active column not found, trying without it')
+        const { error: profileError2 } = await supabaseAdmin
+          .from('profiles')
+          .insert([{
+            id: authData.user?.id,
+            email,
+            full_name: full_name?.trim() || null,
+            role,
+            department: department?.trim() || null,
+            phone: phone?.trim() || null
+          }])
+        profileInsertError = profileError2
+      } else {
+        profileInsertError = profileError1
+      }
+    }
 
     if (profileInsertError) {
       console.error('Profile creation error:', profileInsertError)
