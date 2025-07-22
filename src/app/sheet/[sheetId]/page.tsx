@@ -87,9 +87,20 @@ export default function SheetPage() {
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [editTaskData, setEditTaskData] = useState<Record<string, any>>({})
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [loadingTimeout, setLoadingTimeout] = useState(false)
   
   // Create supabase client once to prevent recreation on every render
   const supabase = useMemo(() => createClient(), [])
+  
+  // Add timeout failsafe for loading
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      console.warn('Sheet page: Loading timeout reached, forcing load')
+      setLoadingTimeout(true)
+    }, 10000) // 10 second timeout
+    
+    return () => clearTimeout(timeout)
+  }, [])
   const sheetId = params.sheetId as string
 
   // Add navigation array for bottom nav
@@ -304,12 +315,43 @@ export default function SheetPage() {
     })
   }, [tasks, filterText, filterUser, filterStatus])
 
-  if (loading || loadingSheet) {
+  if ((loading || loadingSheet) && !loadingTimeout) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading sheet...</p>
+          {(loading || loadingSheet) && (
+            <p className="mt-2 text-sm text-gray-500">
+              If this takes too long, try refreshing the page
+            </p>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // Handle case where loading times out but we don't have user data
+  if (loadingTimeout && !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Loading Issue</h1>
+          <p className="text-gray-600 mb-4">The page is taking longer than expected to load. Please try refreshing or logging in again.</p>
+          <div className="space-x-4">
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              Refresh Page
+            </button>
+            <button
+              onClick={() => router.push('/login')}
+              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              Go to Login
+            </button>
+          </div>
         </div>
       </div>
     )

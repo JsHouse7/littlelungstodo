@@ -54,22 +54,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     try {
-      console.log('AuthProvider: Fetching user profile...')
-      const { data: profileData, error: profileError } = await supabaseClient
+      console.log('AuthProvider: Fetching user profile for userId:', userId)
+      
+      // Add timeout to profile fetch
+      const profilePromise = supabaseClient
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single()
       
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+      )
+      
+      const { data: profileData, error: profileError } = await Promise.race([
+        profilePromise,
+        timeoutPromise
+      ]) as any
+      
       if (profileError) {
         console.error('Profile fetch error:', profileError)
+        console.log('AuthProvider: Profile fetch failed, but continuing without profile')
         return null
       }
       
-      console.log('AuthProvider: Profile fetched successfully')
+      console.log('AuthProvider: Profile fetched successfully:', profileData)
       return profileData
     } catch (profileErr) {
       console.error('Profile fetch exception:', profileErr)
+      console.log('AuthProvider: Profile fetch failed with exception, continuing without profile')
       return null
     }
   }, [])
@@ -81,28 +94,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearExistingTimeout()
     }
     
+    console.log('AuthProvider: Handling auth state, user:', session?.user ? 'present' : 'not present')
+    
     if (session?.user) {
-      const profileData = await fetchProfile(session.user.id)
-      safeSetState(() => {
-        setUser(session.user)
-        setProfile(profileData)
-        setLoading(false)
-      })
-      
-      // Store session info for PWA persistence
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem('supabase.auth.token', JSON.stringify({
-            access_token: session.access_token,
-            refresh_token: session.refresh_token,
-            expires_at: session.expires_at,
-            user: session.user
-          }))
-        } catch (e) {
-          console.warn('Failed to store auth token:', e)
+      console.log('AuthProvider: User authenticated, fetching profile...')
+      try {
+        const profileData = await fetchProfile(session.user.id)
+        
+        if (!mountedRef.current) return
+        
+        console.log('AuthProvider: Setting user and profile state, loading=false')
+        safeSetState(() => {
+          setUser(session.user)
+          setProfile(profileData)
+          setLoading(false)
+        })
+        
+        // Store session info for PWA persistence
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('supabase.auth.token', JSON.stringify({
+              access_token: session.access_token,
+              refresh_token: session.refresh_token,
+              expires_at: session.expires_at,
+              user: session.user
+            }))
+          } catch (e) {
+            console.warn('Failed to store auth token:', e)
+          }
+        }
+      } catch (error) {
+        console.error('AuthProvider: Error in handleAuthState:', error)
+        // Still set loading to false even if profile fetch fails
+        if (mountedRef.current) {
+          safeSetState(() => {
+            setUser(session.user)
+            setProfile(null)
+            setLoading(false)
+          })
         }
       }
     } else {
+      console.log('AuthProvider: No user session, setting loading=false')
       safeSetState(() => {
         setUser(null)
         setProfile(null)
