@@ -42,6 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Memoized functions to prevent re-creation
   const clearExistingTimeout = useCallback(() => {
     if (timeoutRef.current) {
+      console.log('AuthProvider: Clearing auth initialization timeout')
       clearTimeout(timeoutRef.current)
       timeoutRef.current = null
     }
@@ -56,15 +57,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     console.log('AuthProvider: Fetching user profile for userId:', userId)
     
-    // First try direct profile fetch
+    // Add a timeout to the database query itself
     try {
-      console.log('AuthProvider: Attempting direct profile fetch...')
+      console.log('AuthProvider: Attempting direct profile fetch with timeout...')
       
-      const { data: profileData, error: profileError } = await supabaseClient
+      const profilePromise = supabaseClient
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single()
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database query timeout')), 3000)
+      )
+      
+      const result = await Promise.race([profilePromise, timeoutPromise])
+      const { data: profileData, error: profileError } = result as any
       
       if (profileError) {
         console.error('AuthProvider: Profile fetch error:', profileError)
@@ -285,7 +293,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Set timeout as fallback
     timeoutRef.current = setTimeout(() => {
-      console.warn('Auth initialization timeout - setting loading to false')
+      console.warn('AuthProvider: Auth initialization timeout after 8 seconds - forcing loading to false')
       safeSetState(() => setLoading(false))
     }, 8000) // Increased timeout for PWA
 
@@ -300,7 +308,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('AuthProvider: Auth state changed:', event, 'session:', session?.user ? 'present' : 'null')
         if (!mountedRef.current) return
         
-        await handleAuthState(session, false) // Don't clear timeout for auth state changes
+        // Clear timeout when auth state changes and we have a user session
+        const shouldClearTimeout = event === 'SIGNED_IN' && session?.user
+        await handleAuthState(session, shouldClearTimeout)
       } catch (authErr) {
         console.error('Auth state change error:', authErr)
         safeSetState(() => {
