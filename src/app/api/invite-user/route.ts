@@ -5,12 +5,27 @@ import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
   try {
-    const { email, full_name, role, department, phone } = await request.json()
+    const { email, full_name, role, department, phone, password } = await request.json()
 
     // Validate required fields
     if (!email || !role) {
       return NextResponse.json(
         { error: 'Email and role are required' },
+        { status: 400 }
+      )
+    }
+
+    // Validate password
+    if (!password) {
+      return NextResponse.json(
+        { error: 'Password is required' },
+        { status: 400 }
+      )
+    }
+
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: 'Password must be at least 6 characters long' },
         { status: 400 }
       )
     }
@@ -52,25 +67,18 @@ export async function POST(request: Request) {
       }
     )
 
-    // Get the correct redirect URL based on environment
-    const isProduction = process.env.NODE_ENV === 'production'
-    const redirectTo = isProduction 
-      ? process.env.NEXT_PUBLIC_SITE_URL || 'https://littlelungstodo.vercel.app'
-      : 'http://localhost:3000'
-
-    // Invite the user via Supabase Auth
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+    // Create the user directly with password instead of invitation
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
-      {
-        data: {
-          full_name,
-          role,
-          department,
-          phone
-        },
-        redirectTo: redirectTo
+      password,
+      email_confirm: true, // Auto-confirm email since admin is creating
+      user_metadata: {
+        full_name,
+        role,
+        department,
+        phone
       }
-    )
+    })
 
     if (authError) {
       console.error('Auth invitation error:', authError)
@@ -126,7 +134,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: 'User invited successfully',
+      message: 'User created successfully',
       user: authData.user
     })
 

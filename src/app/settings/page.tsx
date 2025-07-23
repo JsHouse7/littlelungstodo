@@ -28,7 +28,9 @@ import {
   Key,
   UserX,
   UserCheck,
-  MoreVertical
+  MoreVertical,
+  Eye,
+  EyeOff
 } from 'lucide-react'
 
 export default function SettingsPage() {
@@ -45,8 +47,12 @@ export default function SettingsPage() {
     full_name: '',
     role: 'staff' as 'admin' | 'doctor' | 'staff',
     department: '',
-    phone: ''
+    phone: '',
+    password: '',
+    confirmPassword: ''
   })
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [profileFormData, setProfileFormData] = useState({
     full_name: profile?.full_name || '',
     department: profile?.department || '',
@@ -141,6 +147,25 @@ export default function SettingsPage() {
     setError('')
     setSuccess('')
 
+    // Validate password fields
+    if (!userFormData.password) {
+      setError('Password is required')
+      setSaveLoading(false)
+      return
+    }
+
+    if (userFormData.password.length < 6) {
+      setError('Password must be at least 6 characters long')
+      setSaveLoading(false)
+      return
+    }
+
+    if (userFormData.password !== userFormData.confirmPassword) {
+      setError('Passwords do not match')
+      setSaveLoading(false)
+      return
+    }
+
     try {
       // Call the API endpoint to invite the user
       const response = await fetch('/api/invite-user', {
@@ -153,7 +178,8 @@ export default function SettingsPage() {
           full_name: userFormData.full_name,
           role: userFormData.role,
           department: userFormData.department,
-          phone: userFormData.phone
+          phone: userFormData.phone,
+          password: userFormData.password
         })
       })
 
@@ -164,13 +190,15 @@ export default function SettingsPage() {
         return
       }
 
-      setSuccess('User invited successfully! They will receive an email invitation.')
+      setSuccess('User created successfully! They can now log in with their credentials.')
       setUserFormData({
         email: '',
         full_name: '',
         role: 'staff',
         department: '',
-        phone: ''
+        phone: '',
+        password: '',
+        confirmPassword: ''
       })
       setShowAddUser(false)
       loadUsers()
@@ -212,7 +240,9 @@ export default function SettingsPage() {
           full_name: '',
           role: 'staff',
           department: '',
-          phone: ''
+          phone: '',
+          password: '',
+          confirmPassword: ''
         })
         loadUsers()
         setTimeout(() => setSuccess(''), 3000)
@@ -279,7 +309,9 @@ export default function SettingsPage() {
       full_name: user.full_name || '',
       role: user.role,
       department: user.department || '',
-      phone: user.phone || ''
+      phone: user.phone || '',
+      password: '',
+      confirmPassword: ''
     })
   }
 
@@ -291,7 +323,9 @@ export default function SettingsPage() {
       full_name: '',
       role: 'staff',
       department: '',
-      phone: ''
+      phone: '',
+      password: '',
+      confirmPassword: ''
     })
     setError('')
   }
@@ -611,6 +645,69 @@ export default function SettingsPage() {
                       />
                     </div>
 
+                    {/* Password fields - only shown when creating new user */}
+                    {!editingUser && (
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Password <span className="text-red-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={showPassword ? 'text' : 'password'}
+                              value={userFormData.password}
+                              onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
+                              className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                              placeholder="Enter password (min 6 characters)"
+                              required
+                            />
+                                                         <button
+                               type="button"
+                               onClick={() => setShowPassword(!showPassword)}
+                               className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600"
+                             >
+                               {showPassword ? (
+                                 <EyeOff className="w-4 h-4" />
+                               ) : (
+                                 <Eye className="w-4 h-4" />
+                               )}
+                             </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Confirm Password <span className="text-red-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={showConfirmPassword ? 'text' : 'password'}
+                              value={userFormData.confirmPassword}
+                              onChange={(e) => setUserFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                              className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                              placeholder="Confirm password"
+                              required
+                            />
+                                                         <button
+                               type="button"
+                               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                               className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600"
+                             >
+                               {showConfirmPassword ? (
+                                 <EyeOff className="w-4 h-4" />
+                               ) : (
+                                 <Eye className="w-4 h-4" />
+                               )}
+                             </button>
+                          </div>
+                          {userFormData.password && userFormData.confirmPassword && 
+                           userFormData.password !== userFormData.confirmPassword && (
+                            <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
+                          )}
+                        </div>
+                      </>
+                    )}
+
                     <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4 border-t border-gray-200">
                       <button
                         onClick={cancelEditing}
@@ -620,10 +717,10 @@ export default function SettingsPage() {
                       </button>
                       <button
                         onClick={editingUser ? handleUpdateUser : handleInviteUser}
-                        disabled={saveLoading || !userFormData.email}
+                        disabled={saveLoading || !userFormData.email || (!editingUser && (!userFormData.password || !userFormData.confirmPassword))}
                         className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto"
                       >
-                        {saveLoading ? 'Processing...' : editingUser ? 'Update User' : 'Send Invitation'}
+                        {saveLoading ? 'Processing...' : editingUser ? 'Update User' : 'Create User'}
                       </button>
                     </div>
                   </div>
