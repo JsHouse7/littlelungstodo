@@ -57,11 +57,78 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     console.log('AuthProvider: Fetching user profile for userId:', userId)
     
-    // Just create a minimal profile from the userId for now to ensure auth completes
-    console.log('AuthProvider: Creating minimal profile to ensure auth completion')
+    // Try database first with robust error handling
+    try {
+      console.log('AuthProvider: Attempting database profile fetch...')
+      
+      const profilePromise = supabaseClient
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database query timeout')), 5000)
+      )
+      
+      const result = await Promise.race([profilePromise, timeoutPromise])
+      const { data: profileData, error: profileError } = result as any
+      
+      if (profileError) {
+        console.error('AuthProvider: Database error:', profileError)
+        throw new Error(`Database error: ${profileError.message}`)
+      }
+      
+      if (profileData) {
+        console.log('AuthProvider: Database profile fetched successfully:', profileData)
+        return profileData
+      }
+    } catch (dbError) {
+      console.error('AuthProvider: Database fetch failed:', dbError)
+      
+      // If it's a "not found" error, try to create the profile
+      if (dbError instanceof Error && dbError.message.includes('No rows returned')) {
+        console.log('AuthProvider: Profile not found in database, attempting to create it...')
+        await tryCreateMissingProfile(userId)
+      }
+    }
+    
+    // Fallback: Get user data from auth and create profile
+    console.log('AuthProvider: Using auth metadata fallback...')
+    try {
+      const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+      
+      if (authError) {
+        console.error('AuthProvider: Auth error:', authError)
+        throw authError
+      }
+      
+      if (user) {
+        console.log('AuthProvider: Creating profile from auth metadata')
+        const fallbackProfile = {
+          id: user.id,
+          email: user.email || '',
+          full_name: user.user_metadata?.full_name || null,
+          role: (user.user_metadata?.role as 'admin' | 'doctor' | 'staff') || 'staff',
+          department: user.user_metadata?.department || null,
+          phone: user.user_metadata?.phone || null,
+          is_active: true,
+          created_at: user.created_at || new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        } as Profile
+        
+        console.log('AuthProvider: Fallback profile created:', fallbackProfile)
+        return fallbackProfile
+      }
+    } catch (authError) {
+      console.error('AuthProvider: Auth fallback failed:', authError)
+    }
+    
+    // Last resort: minimal profile to keep app working
+    console.log('AuthProvider: Creating minimal profile as last resort')
     const minimalProfile = {
       id: userId,
-      email: '', // Will be populated from auth user data
+      email: 'user@example.com',
       full_name: null,
       role: 'staff' as const,
       department: null,
@@ -73,6 +140,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     console.log('AuthProvider: Minimal profile created:', minimalProfile)
     return minimalProfile
+  }, [])
+
+  const tryCreateMissingProfile = useCallback(async (userId: string) => {
+    try {
+      console.log('AuthProvider: Attempting to create missing profile for user:', userId)
+      
+      // Get user data from auth
+      const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+      
+      if (authError || !user) {
+        console.error('AuthProvider: Cannot get user data for profile creation:', authError)
+        return
+      }
+      
+      // Try to insert the profile
+      const { error: insertError } = await supabaseClient
+        .from('profiles')
+        .insert({
+          id: user.id,
+          email: user.email || '',
+          full_name: user.user_metadata?.full_name || null,
+          role: (user.user_metadata?.role as 'admin' | 'doctor' | 'staff') || 'staff',
+          department: user.user_metadata?.department || null,
+          phone: user.user_metadata?.phone || null,
+          is_active: true
+        })
+      
+      if (insertError) {
+        console.error('AuthProvider: Failed to create profile:', insertError)
+      } else {
+        console.log('AuthProvider: Profile created successfully')
+      }
+    } catch (error) {
+      console.error('AuthProvider: Exception creating profile:', error)
+    }
   }, [])
 
   const handleAuthState = useCallback(async (session: any, clearTimeout: boolean = true) => {
