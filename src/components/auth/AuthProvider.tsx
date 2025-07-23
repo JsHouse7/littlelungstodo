@@ -54,121 +54,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
+    console.log('AuthProvider: Fetching user profile for userId:', userId)
+    
+    // First try direct profile fetch
     try {
-      console.log('AuthProvider: Fetching user profile for userId:', userId)
+      console.log('AuthProvider: Attempting direct profile fetch...')
       
-      // First, let's test if we can connect to the database at all
-      console.log('AuthProvider: Testing database connection...')
-      
-      // Quick connectivity test
-      try {
-        const { error: testError } = await supabaseClient
-          .from('profiles')
-          .select('count', { count: 'exact', head: true })
-          .limit(0)
-        
-        if (testError) {
-          console.error('AuthProvider: Database connectivity test failed:', testError)
-        } else {
-          console.log('AuthProvider: Database connectivity test passed')
-        }
-      } catch (testErr) {
-        console.error('AuthProvider: Database connectivity test exception:', testErr)
-      }
-      
-      // Add timeout to profile fetch with longer timeout
-      // Try to fetch profile with detailed logging
-      const profilePromise = supabaseClient
+      const { data: profileData, error: profileError } = await supabaseClient
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single()
       
-      console.log('AuthProvider: Profile query initiated')
-      
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => {
-          console.log('AuthProvider: Profile fetch timeout triggered after 10 seconds')
-          reject(new Error('Profile fetch timeout after 10 seconds'))
-        }, 10000)
-      )
-      
-      const result = await Promise.race([
-        profilePromise,
-        timeoutPromise
-      ]) as any
-      
-      console.log('AuthProvider: Profile query completed:', result)
-      
-      const { data: profileData, error: profileError } = result
-      
       if (profileError) {
-        console.error('Profile fetch error details:', {
-          error: profileError,
-          code: profileError.code,
-          message: profileError.message,
-          hint: profileError.hint,
-          details: profileError.details
-        })
-        
-        // If it's a "not found" error, try to get user data from auth and create a basic profile
-        if (profileError.code === 'PGRST116' || profileError.message?.includes('No rows returned')) {
-          console.log('AuthProvider: Profile not found, trying to get auth user data...')
-          try {
-            const { data: { user } } = await supabaseClient.auth.getUser()
-            if (user) {
-              console.log('AuthProvider: Creating basic profile from auth user data')
-              return {
-                id: user.id,
-                email: user.email || '',
-                full_name: user.user_metadata?.full_name || null,
-                role: user.user_metadata?.role || 'staff',
-                department: user.user_metadata?.department || null,
-                phone: user.user_metadata?.phone || null,
-                is_active: true,
-                created_at: user.created_at || new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              } as Profile
-            }
-          } catch (authErr) {
-            console.error('AuthProvider: Failed to get auth user data:', authErr)
-          }
-        }
-        
-        console.log('AuthProvider: Profile fetch failed, continuing without profile')
-        return null
+        console.error('AuthProvider: Profile fetch error:', profileError)
+        throw new Error(`Profile fetch failed: ${profileError.message}`)
       }
       
-      console.log('AuthProvider: Profile fetched successfully:', profileData)
-      return profileData
-    } catch (profileErr) {
-      console.error('Profile fetch exception:', profileErr)
-      
-      // If timeout or any other error, try to get basic user data from auth
-      console.log('AuthProvider: Profile fetch failed with exception, trying auth fallback...')
-      try {
-        const { data: { user } } = await supabaseClient.auth.getUser()
-        if (user) {
-          console.log('AuthProvider: Creating fallback profile from auth user data')
-          return {
-            id: user.id,
-            email: user.email || '',
-            full_name: user.user_metadata?.full_name || null,
-            role: user.user_metadata?.role || 'staff',
-            department: user.user_metadata?.department || null,
-            phone: user.user_metadata?.phone || null,
-            is_active: true,
-            created_at: user.created_at || new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          } as Profile
-        }
-      } catch (authErr) {
-        console.error('AuthProvider: Auth fallback also failed:', authErr)
+      if (profileData) {
+        console.log('AuthProvider: Profile fetched successfully:', profileData)
+        return profileData
       }
-      
-      console.log('AuthProvider: Profile fetch failed with exception, continuing without profile')
-      return null
+    } catch (dbError) {
+      console.error('AuthProvider: Database query failed:', dbError)
     }
+    
+    // If we get here, database fetch failed - use auth fallback
+    console.log('AuthProvider: Database fetch failed, using auth fallback...')
+    try {
+      const { data: { user } } = await supabaseClient.auth.getUser()
+      if (user) {
+        console.log('AuthProvider: Creating profile from auth user data')
+        const fallbackProfile = {
+          id: user.id,
+          email: user.email || '',
+          full_name: user.user_metadata?.full_name || null,
+          role: user.user_metadata?.role || 'staff',
+          department: user.user_metadata?.department || null,
+          phone: user.user_metadata?.phone || null,
+          is_active: true,
+          created_at: user.created_at || new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        } as Profile
+        
+        console.log('AuthProvider: Fallback profile created:', fallbackProfile)
+        return fallbackProfile
+      }
+    } catch (authError) {
+      console.error('AuthProvider: Auth fallback also failed:', authError)
+    }
+    
+    console.log('AuthProvider: All profile fetch attempts failed, returning null')
+    return null
   }, [])
 
   const handleAuthState = useCallback(async (session: any, clearTimeout: boolean = true) => {
