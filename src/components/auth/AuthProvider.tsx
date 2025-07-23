@@ -37,6 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const mountedRef = useRef(true)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const initializingRef = useRef(false)
+  const currentUserIdRef = useRef<string | null>(null)
   
   // Memoized functions to prevent re-creation
   const clearExistingTimeout = useCallback(() => {
@@ -98,12 +99,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     if (session?.user) {
       console.log('AuthProvider: User authenticated, fetching profile...')
+      
+      // Check if this is the same user to avoid unnecessary profile refetch
+      if (currentUserIdRef.current === session.user.id) {
+        console.log('AuthProvider: Same user, updating session only')
+        safeSetState(() => {
+          setUser(session.user) // Update user object in case of token refresh
+          setLoading(false)
+        })
+        return
+      }
+      
       try {
         const profileData = await fetchProfile(session.user.id)
         
         if (!mountedRef.current) return
         
         console.log('AuthProvider: Setting user and profile state, loading=false')
+        currentUserIdRef.current = session.user.id
         safeSetState(() => {
           setUser(session.user)
           setProfile(profileData)
@@ -127,6 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('AuthProvider: Error in handleAuthState:', error)
         // Still set loading to false even if profile fetch fails
         if (mountedRef.current) {
+          currentUserIdRef.current = session.user.id
           safeSetState(() => {
             setUser(session.user)
             setProfile(null)
@@ -136,6 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } else {
       console.log('AuthProvider: No user session, setting loading=false')
+      currentUserIdRef.current = null
       safeSetState(() => {
         setUser(null)
         setProfile(null)
@@ -262,9 +277,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabaseClient.auth.onAuthStateChange(async (event: string, session: any) => {
       try {
-        console.log('AuthProvider: Auth state changed:', event)
+        console.log('AuthProvider: Auth state changed:', event, 'session:', session?.user ? 'present' : 'null')
         if (!mountedRef.current) return
-        await handleAuthState(session, true)
+        
+        await handleAuthState(session, false) // Don't clear timeout for auth state changes
       } catch (authErr) {
         console.error('Auth state change error:', authErr)
         safeSetState(() => {
@@ -278,6 +294,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       mountedRef.current = false
       initializingRef.current = false
+      currentUserIdRef.current = null
       clearExistingTimeout()
       subscription.unsubscribe()
     }
