@@ -377,10 +377,13 @@ export async function POST(request: Request) {
         }
 
         // Update user's password directly
-        const { error: passwordError } = await supabaseAdmin.auth.admin.updateUser({
+        console.log('Attempting to update password for userId:', userId)
+        const { data: updateResult, error: passwordError } = await supabaseAdmin.auth.admin.updateUser({
           id: userId,
           password: password
         })
+
+        console.log('Password update result:', { data: updateResult, error: passwordError })
 
         if (passwordError) {
           console.error('Password update error:', passwordError)
