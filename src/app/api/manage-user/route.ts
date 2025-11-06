@@ -121,21 +121,9 @@ export async function POST(request: Request) {
           )
         }
 
-        // Check if user already exists (using a more reliable method)
-        try {
-          const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
-          const userExists = existingUsers?.users?.some(user => user.email === email)
-
-          if (userExists) {
-            return NextResponse.json(
-              { error: 'User with this email already exists' },
-              { status: 409 }
-            )
-          }
-        } catch (listError) {
-          console.warn('Could not check existing users, proceeding with invitation:', listError)
-          // If we can't check existing users, we'll let Supabase handle duplicate emails
-        }
+        // Note: We skip the user existence check to avoid admin API permission issues
+        // Supabase will handle duplicate email errors during invitation generation
+        console.log('Proceeding with invitation for email:', email)
 
         // Generate invitation link
         let inviteData, inviteError
