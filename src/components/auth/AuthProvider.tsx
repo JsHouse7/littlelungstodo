@@ -58,25 +58,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('AuthProvider: Fetching user profile for userId:', userId)
 
     try {
-      // Add timeout to prevent hanging
+      console.log('AuthProvider: Starting profile query...')
+
+      // Try regular client first with timeout
       const queryPromise = supabaseClient
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single()
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
-      )
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Profile query timeout after 5 seconds')), 5000)
+      })
 
-      const { data: profileData, error: profileError } = await Promise.race([queryPromise, timeoutPromise]) as any
+      let result: any
+      try {
+        result = await Promise.race([queryPromise, timeoutPromise])
+      } catch (raceError) {
+        console.error('AuthProvider: Profile query timed out or failed:', raceError)
+        return null
+      }
+
+      const { data: profileData, error: profileError } = result
+
+      console.log('AuthProvider: Query completed, data:', !!profileData, 'error:', !!profileError)
 
       if (profileError) {
         console.error('AuthProvider: Profile fetch error:', profileError)
         return null
       }
 
-      console.log('AuthProvider: Profile fetched successfully:', profileData)
+      if (!profileData) {
+        console.warn('AuthProvider: No profile data returned')
+        return null
+      }
+
+      console.log('AuthProvider: Profile fetched successfully:', profileData.id, profileData.email)
       return profileData
     } catch (error) {
       console.error('AuthProvider: Profile fetch exception:', error)
