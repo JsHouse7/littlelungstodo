@@ -58,11 +58,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('AuthProvider: Fetching user profile for userId:', userId)
 
     try {
-      const { data: profileData, error: profileError } = await supabaseClient
+      // Add timeout to prevent hanging
+      const queryPromise = supabaseClient
         .from('profiles')
-        .select('*')
+        .select('id, email, full_name, role, department, phone, is_active, created_at, updated_at')
         .eq('id', userId)
         .single()
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+      )
+
+      const { data: profileData, error: profileError } = await Promise.race([queryPromise, timeoutPromise]) as any
 
       if (profileError) {
         console.error('AuthProvider: Profile fetch error:', profileError)
@@ -104,9 +111,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       try {
         const profileData = await fetchProfile(session.user.id)
-        
+
         if (!mountedRef.current) return
-        
+
         console.log('AuthProvider: Setting user and profile state, loading=false')
         currentUserIdRef.current = session.user.id
         safeSetState(() => {
@@ -114,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(profileData)
           setLoading(false)
         })
-        
+
         // Store session info for PWA persistence
         if (typeof window !== 'undefined') {
           try {
@@ -135,7 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           currentUserIdRef.current = session.user.id
           safeSetState(() => {
             setUser(session.user)
-            setProfile(null)
+            setProfile(null) // Allow login even without profile
             setLoading(false)
           })
         }
