@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS public.user_invitations (
 CREATE TABLE IF NOT EXISTS public.user_audit_log (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   performed_by UUID REFERENCES public.profiles(id) NOT NULL,
-  action TEXT NOT NULL CHECK (action IN ('invite_user', 'update_user', 'reset_password', 'deactivate_user', 'activate_user', 'delete_user')),
+  action TEXT NOT NULL CHECK (action IN ('invite_user', 'update_user', 'reset_password', 'deactivate_user', 'activate_user', 'delete_user', 'confirm_email', 'set_password')),
   target_user_id UUID,
   target_user_email TEXT,
   details JSONB,

@@ -453,6 +453,59 @@ export async function POST(request: Request) {
           )
         }
 
+      case 'confirm_email':
+        if (!userId) {
+          return NextResponse.json(
+            { error: 'userId is required' },
+            { status: 400 }
+          )
+        }
+
+        try {
+          // First, check if the user exists in auth system
+          console.log('Checking if user exists for email confirmation:', userId)
+          const { data: userData, error: userCheckError } = await supabaseAdmin.auth.admin.getUserById(userId)
+
+          if (userCheckError || !userData.user) {
+            console.error('User not found in auth system:', userCheckError)
+            return NextResponse.json(
+              { error: 'User not found in authentication system' },
+              { status: 404 }
+            )
+          }
+
+          console.log('Confirming email for user:', userData.user.email)
+
+          // Confirm the user's email
+          const { data: confirmResult, error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+            email_confirm: true
+          })
+
+          if (confirmError) {
+            console.error('Email confirmation error:', confirmError)
+            return NextResponse.json(
+              { error: `Failed to confirm email: ${confirmError.message}` },
+              { status: 500 }
+            )
+          }
+
+          console.log('Email confirmed successfully for user:', userData.user.email)
+
+          // Log the email confirmation
+          await createAuditLog(supabase, session.user.id, 'confirm_email', userId, userData.user.email, null, request)
+
+          return NextResponse.json({
+            success: true,
+            message: 'Email confirmed successfully'
+          })
+        } catch (unexpectedError) {
+          console.error('Unexpected error during email confirmation:', unexpectedError)
+          return NextResponse.json(
+            { error: 'An unexpected error occurred during email confirmation' },
+            { status: 500 }
+          )
+        }
+
       case 'reset_password':
         if (!email) {
           return NextResponse.json(

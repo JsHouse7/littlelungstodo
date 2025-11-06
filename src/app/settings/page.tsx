@@ -1045,7 +1045,18 @@ export default function SettingsPage() {
                                               <Mail className="w-4 h-4 mr-3 text-gray-400" />
                                               Send Password Reset Email
                                             </button>
-                                            
+
+                                            <button
+                                              onClick={() => {
+                                                setUserMenuOpen(null)
+                                                handleUserAction('confirm_email', userItem.id, userItem.email)
+                                              }}
+                                              className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                            >
+                                              <Check className="w-4 h-4 mr-3 text-gray-400" />
+                                              Confirm Email
+                                            </button>
+
                                             <button
                                               onClick={() => {
                                                 setUserMenuOpen(null)
