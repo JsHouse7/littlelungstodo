@@ -9,16 +9,16 @@ import MobileHeader from '@/components/layout/MobileHeader';
 import BottomNav from '@/components/layout/BottomNav';
 import { createClient } from '@/lib/supabase'
 import { Profile } from '@/lib/database.types'
-import {
-  Settings,
-  Users,
-  User,
-  Plus,
-  Edit,
-  Shield,
-  Mail,
-  Phone,
-  Building,
+import { 
+  Settings, 
+  Users, 
+  User, 
+  Plus, 
+  Edit, 
+  Shield, 
+  Mail, 
+  Phone, 
+  Building, 
   Save,
   X,
   Check,
@@ -51,7 +51,8 @@ export default function SettingsPage() {
     phone: '',
     password: '',
     confirmPassword: '',
-    createWithPassword: false
+    createWithPassword: false,
+    changePassword: false
   })
   const [profileFormData, setProfileFormData] = useState({
     full_name: profile?.full_name || '',
@@ -170,22 +171,22 @@ export default function SettingsPage() {
 
     // If creating with password, validate password fields
     if (userFormData.createWithPassword) {
-      if (!userFormData.password) {
+    if (!userFormData.password) {
         setError('Password is required when creating user with password')
-        setSaveLoading(false)
-        return
-      }
+      setSaveLoading(false)
+      return
+    }
 
-      if (userFormData.password.length < 6) {
-        setError('Password must be at least 6 characters long')
-        setSaveLoading(false)
-        return
-      }
+    if (userFormData.password.length < 6) {
+      setError('Password must be at least 6 characters long')
+      setSaveLoading(false)
+      return
+    }
 
-      if (userFormData.password !== userFormData.confirmPassword) {
-        setError('Passwords do not match')
-        setSaveLoading(false)
-        return
+    if (userFormData.password !== userFormData.confirmPassword) {
+      setError('Passwords do not match')
+      setSaveLoading(false)
+      return
       }
     }
 
@@ -223,7 +224,8 @@ export default function SettingsPage() {
         phone: '',
         password: '',
         confirmPassword: '',
-        createWithPassword: false
+        createWithPassword: false,
+        changePassword: false
       })
       setShowAddUser(false)
       loadUsers()
@@ -244,9 +246,30 @@ export default function SettingsPage() {
     setError('')
     setSuccess('')
 
+    // Validate password if changing
+    if (userFormData.changePassword) {
+      if (!userFormData.password) {
+        setError('Password is required when changing password')
+        setSaveLoading(false)
+        return
+      }
+
+      if (userFormData.password.length < 6) {
+        setError('Password must be at least 6 characters long')
+        setSaveLoading(false)
+        return
+      }
+
+      if (userFormData.password !== userFormData.confirmPassword) {
+        setError('Passwords do not match')
+        setSaveLoading(false)
+        return
+      }
+    }
+
     try {
-      // Call the API endpoint to update the user
-      const response = await fetch('/api/manage-user', {
+      // First update the profile data
+      const profileResponse = await fetch('/api/manage-user', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -261,21 +284,51 @@ export default function SettingsPage() {
         })
       })
 
-      const result = await response.json()
+      const profileResult = await profileResponse.json()
 
-      if (!response.ok) {
-        setError(result.error || 'Failed to update user')
+      if (!profileResponse.ok) {
+        setError(profileResult.error || 'Failed to update user')
         return
       }
 
-      setSuccess('User updated successfully!')
+      // If changing password, make a second API call
+      if (userFormData.changePassword && userFormData.password) {
+        const passwordResponse = await fetch('/api/manage-user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'set_password',
+            userId: editingUser.id,
+            password: userFormData.password
+          })
+        })
+
+        const passwordResult = await passwordResponse.json()
+
+        if (!passwordResponse.ok) {
+          setError(`Profile updated but password change failed: ${passwordResult.error}`)
+          loadUsers()
+          setTimeout(() => setError(''), 5000)
+          return
+        }
+      }
+
+      setSuccess(userFormData.changePassword 
+        ? 'User profile and password updated successfully!' 
+        : 'User updated successfully!')
       setEditingUser(null)
       setUserFormData({
         email: '',
         full_name: '',
         role: 'staff',
         department: '',
-        phone: ''
+        phone: '',
+        password: '',
+        confirmPassword: '',
+        createWithPassword: false,
+        changePassword: false
       })
       loadUsers()
       setTimeout(() => setSuccess(''), 3000)
@@ -344,7 +397,8 @@ export default function SettingsPage() {
       phone: user.phone || '',
       password: '',
       confirmPassword: '',
-      createWithPassword: false
+      createWithPassword: false,
+      changePassword: false
     })
   }
 
@@ -359,7 +413,8 @@ export default function SettingsPage() {
       phone: '',
       password: '',
       confirmPassword: '',
-      createWithPassword: false
+      createWithPassword: false,
+      changePassword: false
     })
     setError('')
   }
@@ -764,12 +819,86 @@ export default function SettingsPage() {
                             />
                             <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                           </div>
-                          {userFormData.password && userFormData.confirmPassword &&
+                          {userFormData.password && userFormData.confirmPassword && 
                            userFormData.password !== userFormData.confirmPassword && (
                             <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
                           )}
                         </div>
                       </>
+                    )}
+
+                    {/* Password change section for editing users */}
+                    {editingUser && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-md p-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <Key className="w-5 h-5 text-amber-600 mr-2" />
+                              <span className="text-sm font-medium text-amber-900">Change Password</span>
+                            </div>
+                            <label className="flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={userFormData.changePassword}
+                                onChange={(e) => setUserFormData(prev => ({
+                                  ...prev,
+                                  changePassword: e.target.checked,
+                                  password: '',
+                                  confirmPassword: ''
+                                }))}
+                                className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded"
+                              />
+                              <span className="ml-2 text-sm text-amber-700">Set new password</span>
+                            </label>
+                          </div>
+
+                          {userFormData.changePassword && (
+                            <div className="space-y-3 pt-2 border-t border-amber-200">
+                              <p className="text-xs text-amber-700">
+                                This will immediately change the user's password. They will need to use the new password on their next login.
+                              </p>
+
+                              <div>
+                                <label className="block text-sm font-medium text-amber-900 mb-1">
+                                  New Password <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type="password"
+                                    value={userFormData.password}
+                                    onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
+                                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900"
+                                    placeholder="Enter new password (min 6 characters)"
+                                    required
+                                  />
+                                  <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-amber-900 mb-1">
+                                  Confirm New Password <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type="password"
+                                    value={userFormData.confirmPassword}
+                                    onChange={(e) => setUserFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-900"
+                                    placeholder="Confirm new password"
+                                    required
+                                  />
+                                  <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                </div>
+                                {userFormData.password && userFormData.confirmPassword &&
+                                 userFormData.password !== userFormData.confirmPassword && (
+                                  <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
 
                     {/* Email note for invitations */}
@@ -794,10 +923,10 @@ export default function SettingsPage() {
                       </button>
                       <button
                         onClick={editingUser ? handleUpdateUser : handleInviteUser}
-                        disabled={saveLoading || !userFormData.email || !userFormData.role || (userFormData.createWithPassword && !userFormData.password)}
+                        disabled={saveLoading || !userFormData.email || !userFormData.role || (userFormData.createWithPassword && !userFormData.password) || (editingUser && userFormData.changePassword && !userFormData.password)}
                         className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto"
                       >
-                        {saveLoading ? 'Processing...' : editingUser ? 'Update User' : (userFormData.createWithPassword ? 'Create User' : 'Send Invitation')}
+                        {saveLoading ? 'Processing...' : editingUser ? (userFormData.changePassword ? 'Update User & Password' : 'Update User') : (userFormData.createWithPassword ? 'Create User' : 'Send Invitation')}
                       </button>
                     </div>
                   </div>
@@ -913,8 +1042,8 @@ export default function SettingsPage() {
                                               }}
                                               className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                                             >
-                                              <Key className="w-4 h-4 mr-3 text-gray-400" />
-                                              Reset Password
+                                              <Mail className="w-4 h-4 mr-3 text-gray-400" />
+                                              Send Password Reset Email
                                             </button>
                                             
                                             <button

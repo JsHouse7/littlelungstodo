@@ -360,6 +360,44 @@ export async function POST(request: Request) {
           message: 'User updated successfully'
         })
 
+      case 'set_password':
+        if (!userId || !password) {
+          return NextResponse.json(
+            { error: 'userId and password are required' },
+            { status: 400 }
+          )
+        }
+
+        // Validate password
+        if (password.length < 6) {
+          return NextResponse.json(
+            { error: 'Password must be at least 6 characters long' },
+            { status: 400 }
+          )
+        }
+
+        // Update user's password directly
+        const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(
+          userId,
+          { password: password }
+        )
+
+        if (passwordError) {
+          console.error('Password update error:', passwordError)
+          return NextResponse.json(
+            { error: `Failed to update password: ${passwordError.message}` },
+            { status: 500 }
+          )
+        }
+
+        // Log the password change
+        await createAuditLog(supabase, session.user.id, 'set_password', userId, null, null, request)
+
+        return NextResponse.json({
+          success: true,
+          message: 'Password updated successfully'
+        })
+
       case 'reset_password':
         if (!email) {
           return NextResponse.json(

@@ -56,21 +56,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     console.log('AuthProvider: Fetching user profile for userId:', userId)
-
+    
     try {
       console.log('AuthProvider: Starting profile query...')
-
+      
       // Try regular client first with timeout
       const queryPromise = supabaseClient
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single()
-
+      
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Profile query timeout after 5 seconds')), 5000)
       })
-
+      
       let result: any
       try {
         result = await Promise.race([queryPromise, timeoutPromise])
@@ -128,9 +128,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       try {
         const profileData = await fetchProfile(session.user.id)
-
+        
         if (!mountedRef.current) return
-
+        
         console.log('AuthProvider: Setting user and profile state, loading=false')
         currentUserIdRef.current = session.user.id
         safeSetState(() => {
@@ -138,7 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(profileData)
           setLoading(false)
         })
-
+        
         // Store session info for PWA persistence
         if (typeof window !== 'undefined') {
           try {
