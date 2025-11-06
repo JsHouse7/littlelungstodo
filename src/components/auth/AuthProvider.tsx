@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Add timeout to prevent hanging
       const queryPromise = supabaseClient
         .from('profiles')
-        .select('id, email, full_name, role, department, phone, is_active, created_at, updated_at')
+        .select('*')
         .eq('id', userId)
         .single()
 
