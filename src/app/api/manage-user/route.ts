@@ -40,7 +40,7 @@ async function createAuditLog(
 // Consolidated user management API
 export async function POST(request: Request) {
   try {
-    const { action, userId, email, full_name, role, department, phone } = await request.json()
+    const { action, userId, email, full_name, role, department, phone, password } = await request.json()
 
     // Validate required fields
     if (!action) {
@@ -96,94 +96,189 @@ export async function POST(request: Request) {
     switch (action) {
       case 'invite_user':
         // Validate invitation fields
-        if (!email || !role) {
+    if (!email || !role) {
+      return NextResponse.json(
+        { error: 'Email and role are required for invitations' },
+        { status: 400 }
+      )
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
+        { status: 400 }
+      )
+    }
+
+    // Validate role
+    const validRoles = ['admin', 'doctor', 'staff']
+    if (!validRoles.includes(role)) {
+      return NextResponse.json(
+        { error: 'Invalid role. Must be admin, doctor, or staff' },
+        { status: 400 }
+      )
+    }
+
+    // If password is provided, validate it
+    if (password) {
+      if (password.length < 6) {
+        return NextResponse.json(
+          { error: 'Password must be at least 6 characters long' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Check if user already exists (only when not providing password - for invitation flow)
+    if (!password) {
+      console.log('Checking for existing user (invitation mode)...')
+      try {
+        const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
+        const userExists = existingUsers?.users?.some(user => user.email === email)
+
+        if (userExists) {
           return NextResponse.json(
-            { error: 'Email and role are required for invitations' },
-            { status: 400 }
+            { error: 'User with this email already exists' },
+            { status: 409 }
           )
         }
+      } catch (listError) {
+        console.warn('Could not check existing users, proceeding with invitation:', listError)
+      }
+    }
 
-        // Validate email format
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(email)) {
-          return NextResponse.json(
-            { error: 'Invalid email format' },
-            { status: 400 }
-          )
-        }
+    console.log('Proceeding with user creation for email:', email, password ? '(with password)' : '(invitation mode)')
 
-        // Validate role
-        const validRoles = ['admin', 'doctor', 'staff']
-        if (!validRoles.includes(role)) {
-          return NextResponse.json(
-            { error: 'Invalid role. Must be admin, doctor, or staff' },
-            { status: 400 }
-          )
-        }
+    let userResult
 
-        // Note: We skip the user existence check to avoid admin API permission issues
-        // Supabase will handle duplicate email errors during invitation generation
-        console.log('Proceeding with invitation for email:', email)
-
-        // Generate invitation link
-        let inviteData, inviteError
-        try {
-          const result = await supabaseAdmin.auth.admin.generateLink({
-            type: 'invite',
-            email: email,
-            options: {
-              redirectTo: `${redirectTo}/login`,
-              data: {
-                full_name: full_name?.trim(),
-                role,
-                department: department?.trim(),
-                phone: phone?.trim()
-              }
-            }
-          })
-          inviteData = result.data
-          inviteError = result.error
-        } catch (genError) {
-          console.error('Exception during invitation generation:', genError)
-          return NextResponse.json(
-            { error: 'Failed to generate invitation link' },
-            { status: 500 }
-          )
-        }
-
-        if (inviteError) {
-          console.error('Invitation generation error:', inviteError)
-          return NextResponse.json(
-            { error: `Failed to send invitation: ${inviteError.message}` },
-            { status: 500 }
-          )
-        }
-
-        // Create pending invitation record (optional - invitation will still work if this fails)
-        try {
-          const { error: invitationRecordError } = await supabase
-            .from('user_invitations')
-            .insert([{
-              email,
-              invited_by: session.user.id,
-              role,
-              department: department?.trim() || null,
-              phone: phone?.trim() || null,
-              full_name: full_name?.trim() || null,
-              invited_at: new Date().toISOString(),
-              status: 'pending'
-            }])
-
-          if (invitationRecordError) {
-            console.warn('Failed to create invitation record (continuing anyway):', invitationRecordError)
-            // Don't fail the invitation if we can't create the record
-          } else {
-            console.log('Invitation record created successfully')
+    if (password) {
+      // Create user directly with password
+      console.log('Creating user with password...')
+      try {
+        const createResult = await supabaseAdmin.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true, // Auto-confirm since admin is creating
+          user_metadata: {
+            full_name: full_name?.trim(),
+            role,
+            department: department?.trim(),
+            phone: phone?.trim()
           }
-        } catch (dbError) {
-          console.warn('Database error creating invitation record (continuing anyway):', dbError)
-          // Continue with invitation even if DB record creation fails
+        })
+
+        if (createResult.error) {
+          console.error('User creation error:', createResult.error)
+          return NextResponse.json(
+            { error: `Failed to create user: ${createResult.error.message}` },
+            { status: 500 }
+          )
         }
+
+        userResult = createResult.data
+        console.log('User created successfully with password')
+      } catch (createError) {
+        console.error('Exception during user creation:', createError)
+        return NextResponse.json(
+          { error: 'Failed to create user account' },
+          { status: 500 }
+        )
+      }
+    } else {
+      // Generate invitation link
+      console.log('Generating invitation link...')
+      let inviteData, inviteError
+      try {
+        const result = await supabaseAdmin.auth.admin.generateLink({
+          type: 'invite',
+          email: email,
+          options: {
+            redirectTo: `${redirectTo}/login`,
+            data: {
+              full_name: full_name?.trim(),
+              role,
+              department: department?.trim(),
+              phone: phone?.trim()
+            }
+          }
+        })
+        inviteData = result.data
+        inviteError = result.error
+      } catch (genError) {
+        console.error('Exception during invitation generation:', genError)
+        return NextResponse.json(
+          { error: 'Failed to generate invitation link' },
+          { status: 500 }
+        )
+      }
+
+      if (inviteError) {
+        console.error('Invitation generation error:', inviteError)
+        return NextResponse.json(
+          { error: `Failed to send invitation: ${inviteError.message}` },
+          { status: 500 }
+        )
+      }
+
+      userResult = inviteData
+    }
+
+    // Handle profile/invitation record creation
+    if (password) {
+      // For password-based creation, create the profile immediately
+      console.log('Creating profile record for password-based user...')
+      try {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([{
+            id: userResult.user?.id,
+            email,
+            full_name: full_name?.trim() || null,
+            role,
+            department: department?.trim() || null,
+            phone: phone?.trim() || null,
+            is_active: true
+          }])
+
+        if (profileError) {
+          console.warn('Failed to create profile record:', profileError)
+          // Don't fail user creation if profile creation fails
+        } else {
+          console.log('Profile record created successfully')
+        }
+      } catch (profileDbError) {
+        console.warn('Database error creating profile record:', profileDbError)
+      }
+    } else {
+      // For invitation-based creation, create invitation record
+      console.log('Creating invitation record...')
+      try {
+        const { error: invitationRecordError } = await supabase
+          .from('user_invitations')
+          .insert([{
+            email,
+            invited_by: session.user.id,
+            role,
+            department: department?.trim() || null,
+            phone: phone?.trim() || null,
+            full_name: full_name?.trim() || null,
+            invited_at: new Date().toISOString(),
+            status: 'pending'
+          }])
+
+        if (invitationRecordError) {
+          console.warn('Failed to create invitation record (continuing anyway):', invitationRecordError)
+          // Don't fail the invitation if we can't create the record
+        } else {
+          console.log('Invitation record created successfully')
+        }
+      } catch (dbError) {
+        console.warn('Database error creating invitation record (continuing anyway):', dbError)
+        // Continue with invitation even if DB record creation fails
+      }
+    }
 
         // Log the invitation
         try {
@@ -200,8 +295,15 @@ export async function POST(request: Request) {
 
         return NextResponse.json({
           success: true,
-          message: 'Invitation sent successfully. The user will receive an email with instructions to set up their account.',
-          invitation: {
+          message: password
+            ? 'User created successfully with the provided password. They can now log in immediately.'
+            : 'Invitation sent successfully. The user will receive an email with instructions to set up their account.',
+          user: password ? {
+            id: userResult.user?.id,
+            email,
+            role,
+            created_at: userResult.user?.created_at
+          } : {
             email,
             role,
             invited_at: new Date().toISOString()

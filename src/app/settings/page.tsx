@@ -9,16 +9,16 @@ import MobileHeader from '@/components/layout/MobileHeader';
 import BottomNav from '@/components/layout/BottomNav';
 import { createClient } from '@/lib/supabase'
 import { Profile } from '@/lib/database.types'
-import { 
-  Settings, 
-  Users, 
-  User, 
-  Plus, 
-  Edit, 
-  Shield, 
-  Mail, 
-  Phone, 
-  Building, 
+import {
+  Settings,
+  Users,
+  User,
+  Plus,
+  Edit,
+  Shield,
+  Mail,
+  Phone,
+  Building,
   Save,
   X,
   Check,
@@ -30,7 +30,8 @@ import {
   UserCheck,
   MoreVertical,
   Eye,
-  EyeOff
+  EyeOff,
+  Lock
 } from 'lucide-react'
 
 export default function SettingsPage() {
@@ -47,7 +48,10 @@ export default function SettingsPage() {
     full_name: '',
     role: 'staff' as 'admin' | 'doctor' | 'staff',
     department: '',
-    phone: ''
+    phone: '',
+    password: '',
+    confirmPassword: '',
+    createWithPassword: false
   })
   const [profileFormData, setProfileFormData] = useState({
     full_name: profile?.full_name || '',
@@ -164,8 +168,29 @@ export default function SettingsPage() {
       return
     }
 
+    // If creating with password, validate password fields
+    if (userFormData.createWithPassword) {
+      if (!userFormData.password) {
+        setError('Password is required when creating user with password')
+        setSaveLoading(false)
+        return
+      }
+
+      if (userFormData.password.length < 6) {
+        setError('Password must be at least 6 characters long')
+        setSaveLoading(false)
+        return
+      }
+
+      if (userFormData.password !== userFormData.confirmPassword) {
+        setError('Passwords do not match')
+        setSaveLoading(false)
+        return
+      }
+    }
+
     try {
-      // Call the API endpoint to invite the user
+      // Call the API endpoint to create/invite the user
       const response = await fetch('/api/manage-user', {
         method: 'POST',
         headers: {
@@ -177,31 +202,35 @@ export default function SettingsPage() {
           full_name: userFormData.full_name,
           role: userFormData.role,
           department: userFormData.department,
-          phone: userFormData.phone
+          phone: userFormData.phone,
+          password: userFormData.createWithPassword ? userFormData.password : undefined
         })
       })
 
       const result = await response.json()
 
       if (!response.ok) {
-        setError(result.error || 'Failed to invite user')
+        setError(result.error || 'Failed to create user')
         return
       }
 
-      setSuccess('Invitation sent successfully! The user will receive an email with instructions to set up their account.')
+      setSuccess(result.message || 'User created successfully!')
       setUserFormData({
         email: '',
         full_name: '',
         role: 'staff',
         department: '',
-        phone: ''
+        phone: '',
+        password: '',
+        confirmPassword: '',
+        createWithPassword: false
       })
       setShowAddUser(false)
       loadUsers()
       setTimeout(() => setSuccess(''), 5000)
 
     } catch (err) {
-      console.error('Error inviting user:', err)
+      console.error('Error creating user:', err)
       setError('An unexpected error occurred')
     } finally {
       setSaveLoading(false)
@@ -312,7 +341,10 @@ export default function SettingsPage() {
       full_name: user.full_name || '',
       role: user.role,
       department: user.department || '',
-      phone: user.phone || ''
+      phone: user.phone || '',
+      password: '',
+      confirmPassword: '',
+      createWithPassword: false
     })
   }
 
@@ -324,7 +356,10 @@ export default function SettingsPage() {
       full_name: '',
       role: 'staff',
       department: '',
-      phone: ''
+      phone: '',
+      password: '',
+      confirmPassword: '',
+      createWithPassword: false
     })
     setError('')
   }
@@ -554,7 +589,7 @@ export default function SettingsPage() {
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center w-full sm:w-auto"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Send Invitation
+                  Add User
                 </button>
               </div>
 
@@ -564,7 +599,7 @@ export default function SettingsPage() {
               } w-full`}>
                 <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 w-full">
                   <h4 className="text-lg font-medium text-gray-900 mb-4">
-                    {editingUser ? 'Edit User' : 'Send User Invitation'}
+                    {editingUser ? 'Edit User' : (userFormData.createWithPassword ? 'Create User Account' : 'Send User Invitation')}
                   </h4>
                   
                   <div className="space-y-4">
@@ -644,8 +679,101 @@ export default function SettingsPage() {
                       />
                     </div>
 
-                    {/* Email note for invitations */}
+                    {/* Creation method toggle */}
                     {!editingUser && (
+                      <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <Lock className="w-5 h-5 text-gray-600 mr-2" />
+                              <span className="text-sm font-medium text-gray-900">Creation Method</span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                name="creationMethod"
+                                checked={!userFormData.createWithPassword}
+                                onChange={() => setUserFormData(prev => ({ ...prev, createWithPassword: false }))}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                              />
+                              <div className="ml-3">
+                                <div className="flex items-center">
+                                  <Mail className="w-4 h-4 text-blue-600 mr-1" />
+                                  <span className="text-sm font-medium text-gray-900">Send Email Invitation</span>
+                                </div>
+                                <p className="text-xs text-gray-600">User receives email with setup link</p>
+                              </div>
+                            </label>
+
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                name="creationMethod"
+                                checked={userFormData.createWithPassword}
+                                onChange={() => setUserFormData(prev => ({ ...prev, createWithPassword: true }))}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                              />
+                              <div className="ml-3">
+                                <div className="flex items-center">
+                                  <Lock className="w-4 h-4 text-blue-600 mr-1" />
+                                  <span className="text-sm font-medium text-gray-900">Set Password Directly</span>
+                                </div>
+                                <p className="text-xs text-gray-600">Create account with provided password</p>
+                              </div>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Password fields - only shown when creating with password */}
+                    {userFormData.createWithPassword && !editingUser && (
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Password <span className="text-red-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="password"
+                              value={userFormData.password}
+                              onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
+                              className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                              placeholder="Enter password (min 6 characters)"
+                              required
+                            />
+                            <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Confirm Password <span className="text-red-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="password"
+                              value={userFormData.confirmPassword}
+                              onChange={(e) => setUserFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                              className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                              placeholder="Confirm password"
+                              required
+                            />
+                            <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          </div>
+                          {userFormData.password && userFormData.confirmPassword &&
+                           userFormData.password !== userFormData.confirmPassword && (
+                            <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Email note for invitations */}
+                    {!editingUser && !userFormData.createWithPassword && (
                       <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
                         <div className="flex items-start">
                           <Mail className="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
@@ -666,10 +794,10 @@ export default function SettingsPage() {
                       </button>
                       <button
                         onClick={editingUser ? handleUpdateUser : handleInviteUser}
-                        disabled={saveLoading || !userFormData.email || !userFormData.role}
+                        disabled={saveLoading || !userFormData.email || !userFormData.role || (userFormData.createWithPassword && !userFormData.password)}
                         className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto"
                       >
-                        {saveLoading ? 'Processing...' : editingUser ? 'Update User' : 'Send Invitation'}
+                        {saveLoading ? 'Processing...' : editingUser ? 'Update User' : (userFormData.createWithPassword ? 'Create User' : 'Send Invitation')}
                       </button>
                     </div>
                   </div>
