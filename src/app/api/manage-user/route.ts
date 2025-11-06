@@ -384,7 +384,15 @@ export async function POST(request: Request) {
 
           // First, check if the user exists in auth system
           console.log('Checking if user exists in auth system:', userId)
-          const { data: userData, error: userCheckError } = await supabaseAdmin.auth.admin.getUserById(userId)
+          let userData, userCheckError
+          try {
+            const result = await supabaseAdmin.auth.admin.getUserById(userId)
+            userData = result.data
+            userCheckError = result.error
+          } catch (userCheckException) {
+            console.error('Exception during user check:', userCheckException)
+            throw new Error(`Failed to check user existence: ${userCheckException.message}`)
+          }
 
           if (userCheckError || !userData.user) {
             console.error('User not found in auth system:', userCheckError)
@@ -398,10 +406,18 @@ export async function POST(request: Request) {
 
           // Update user's password directly
           console.log('Attempting to update password for userId:', userId)
-          const { data: updateResult, error: passwordError } = await supabaseAdmin.auth.admin.updateUser({
-            id: userId,
-            password: password
-          })
+          let updateResult, passwordError
+          try {
+            const result = await supabaseAdmin.auth.admin.updateUser({
+              id: userId,
+              password: password
+            })
+            updateResult = result.data
+            passwordError = result.error
+          } catch (passwordUpdateException) {
+            console.error('Exception during password update:', passwordUpdateException)
+            throw new Error(`Failed to update password: ${passwordUpdateException.message}`)
+          }
 
           console.log('Password update result:', { data: updateResult, error: passwordError })
 
@@ -414,7 +430,14 @@ export async function POST(request: Request) {
           }
 
           // Log the password change
-          await createAuditLog(supabase, session.user.id, 'set_password', userId, null, null, request)
+          console.log('Creating audit log...')
+          try {
+            await createAuditLog(supabase, session.user.id, 'set_password', userId, null, null, request)
+          } catch (auditLogException) {
+            console.error('Exception during audit log creation:', auditLogException)
+            // Don't fail the password update if audit logging fails
+            console.warn('Password updated but audit logging failed')
+          }
 
           return NextResponse.json({
             success: true,
@@ -422,8 +445,11 @@ export async function POST(request: Request) {
           })
         } catch (unexpectedError) {
           console.error('Unexpected error during password update:', unexpectedError)
+          console.error('Error stack:', unexpectedError?.stack)
+          console.error('Error message:', unexpectedError?.message)
+          console.error('Error name:', unexpectedError?.name)
           return NextResponse.json(
-            { error: 'An unexpected error occurred during password update' },
+            { error: `An unexpected error occurred during password update: ${unexpectedError?.message || 'Unknown error'}` },
             { status: 500 }
           )
         }
