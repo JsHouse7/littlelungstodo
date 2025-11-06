@@ -361,24 +361,24 @@ export async function POST(request: Request) {
         })
 
       case 'set_password':
-        if (!userId || !password) {
-          return NextResponse.json(
-            { error: 'userId and password are required' },
-            { status: 400 }
-          )
-        }
-
-        // Validate password
-        if (password.length < 6) {
-          return NextResponse.json(
-            { error: 'Password must be at least 6 characters long' },
-            { status: 400 }
-          )
-        }
-
-        // First, check if the user exists in auth system
-        console.log('Checking if user exists in auth system:', userId)
         try {
+          if (!userId || !password) {
+            return NextResponse.json(
+              { error: 'userId and password are required' },
+              { status: 400 }
+            )
+          }
+
+          // Validate password
+          if (password.length < 6) {
+            return NextResponse.json(
+              { error: 'Password must be at least 6 characters long' },
+              { status: 400 }
+            )
+          }
+
+          // First, check if the user exists in auth system
+          console.log('Checking if user exists in auth system:', userId)
           const { data: userData, error: userCheckError } = await supabaseAdmin.auth.admin.getUserById(userId)
 
           if (userCheckError || !userData.user) {
@@ -390,38 +390,38 @@ export async function POST(request: Request) {
           }
 
           console.log('User found in auth system:', userData.user.email)
-        } catch (checkError) {
-          console.error('Error checking user existence:', checkError)
+
+          // Update user's password directly
+          console.log('Attempting to update password for userId:', userId)
+          const { data: updateResult, error: passwordError } = await supabaseAdmin.auth.admin.updateUser({
+            id: userId,
+            password: password
+          })
+
+          console.log('Password update result:', { data: updateResult, error: passwordError })
+
+          if (passwordError) {
+            console.error('Password update error:', passwordError)
+            return NextResponse.json(
+              { error: `Failed to update password: ${passwordError.message}` },
+              { status: 500 }
+            )
+          }
+
+          // Log the password change
+          await createAuditLog(supabase, session.user.id, 'set_password', userId, null, null, request)
+
+          return NextResponse.json({
+            success: true,
+            message: 'Password updated successfully'
+          })
+        } catch (unexpectedError) {
+          console.error('Unexpected error during password update:', unexpectedError)
           return NextResponse.json(
-            { error: 'Failed to verify user exists' },
+            { error: 'An unexpected error occurred during password update' },
             { status: 500 }
           )
         }
-
-        // Update user's password directly
-        console.log('Attempting to update password for userId:', userId)
-        const { data: updateResult, error: passwordError } = await supabaseAdmin.auth.admin.updateUser({
-          id: userId,
-          password: password
-        })
-
-        console.log('Password update result:', { data: updateResult, error: passwordError })
-
-        if (passwordError) {
-          console.error('Password update error:', passwordError)
-          return NextResponse.json(
-            { error: `Failed to update password: ${passwordError.message}` },
-            { status: 500 }
-          )
-        }
-
-        // Log the password change
-        await createAuditLog(supabase, session.user.id, 'set_password', userId, null, null, request)
-
-        return NextResponse.json({
-          success: true,
-          message: 'Password updated successfully'
-        })
 
       case 'reset_password':
         if (!email) {
