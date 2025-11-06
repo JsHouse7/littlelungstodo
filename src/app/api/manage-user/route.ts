@@ -76,6 +76,10 @@ export async function POST(request: Request) {
     }
 
     // Create admin client with service role key
+    console.log('Creating Supabase admin client...')
+    console.log('SUPABASE_URL exists:', !!process.env.NEXT_PUBLIC_SUPABASE_URL)
+    console.log('SERVICE_ROLE_KEY exists:', !!process.env.SUPABASE_SERVICE_ROLE_KEY)
+
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -86,6 +90,7 @@ export async function POST(request: Request) {
         }
       }
     )
+    console.log('Supabase admin client created successfully')
 
     // Get the correct redirect URL based on environment (used in multiple places)
     const isProduction = process.env.NODE_ENV === 'production'
