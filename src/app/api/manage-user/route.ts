@@ -99,6 +99,45 @@ export async function POST(request: Request) {
       : 'http://localhost:3000'
 
     switch (action) {
+      case 'confirm_email':
+        try {
+          if (!userId) {
+            return NextResponse.json(
+              { error: 'userId is required to confirm email' },
+              { status: 400 }
+            )
+          }
+
+          console.log('Confirming email for userId:', userId)
+
+          // Update user to confirm email
+          const confirmResult = await supabaseAdmin.auth.admin.updateUserById(userId, {
+            email_confirm: true
+          })
+
+          if (confirmResult.error) {
+            console.error('Email confirmation error:', confirmResult.error)
+            return NextResponse.json(
+              { error: `Failed to confirm email: ${confirmResult.error.message}` },
+              { status: 500 }
+            )
+          }
+
+          // Log the email confirmation
+          await createAuditLog(supabase, session.user.id, 'confirm_email', userId, null, null, request)
+
+          return NextResponse.json({
+            success: true,
+            message: 'Email confirmed successfully'
+          })
+        } catch (error) {
+          console.error('Unexpected error during email confirmation:', error)
+          return NextResponse.json(
+            { error: 'An unexpected error occurred during email confirmation' },
+            { status: 500 }
+          )
+        }
+
       case 'invite_user':
         // Validate invitation fields
     if (!email || !role) {
@@ -449,59 +488,6 @@ export async function POST(request: Request) {
           console.error('Error name:', unexpectedError?.name)
           return NextResponse.json(
             { error: `An unexpected error occurred during password update: ${unexpectedError?.message || 'Unknown error'}` },
-            { status: 500 }
-          )
-        }
-
-      case 'confirm_email':
-        if (!userId) {
-          return NextResponse.json(
-            { error: 'userId is required' },
-            { status: 400 }
-          )
-        }
-
-        try {
-          // First, check if the user exists in auth system
-          console.log('Checking if user exists for email confirmation:', userId)
-          const { data: userData, error: userCheckError } = await supabaseAdmin.auth.admin.getUserById(userId)
-
-          if (userCheckError || !userData.user) {
-            console.error('User not found in auth system:', userCheckError)
-            return NextResponse.json(
-              { error: 'User not found in authentication system' },
-              { status: 404 }
-            )
-          }
-
-          console.log('Confirming email for user:', userData.user.email)
-
-          // Confirm the user's email
-          const { data: confirmResult, error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-            email_confirm: true
-          })
-
-          if (confirmError) {
-            console.error('Email confirmation error:', confirmError)
-            return NextResponse.json(
-              { error: `Failed to confirm email: ${confirmError.message}` },
-              { status: 500 }
-            )
-          }
-
-          console.log('Email confirmed successfully for user:', userData.user.email)
-
-          // Log the email confirmation
-          await createAuditLog(supabase, session.user.id, 'confirm_email', userId, userData.user.email, null, request)
-
-          return NextResponse.json({
-            success: true,
-            message: 'Email confirmed successfully'
-          })
-        } catch (unexpectedError) {
-          console.error('Unexpected error during email confirmation:', unexpectedError)
-          return NextResponse.json(
-            { error: 'An unexpected error occurred during email confirmation' },
             { status: 500 }
           )
         }

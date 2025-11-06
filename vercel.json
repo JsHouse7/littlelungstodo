@@ -1,12 +1,7 @@
 {
-  "version": 2,
-  "name": "little-lungs-todo",
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ],
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
   "env": {
     "NEXT_PUBLIC_SUPABASE_URL": "https://cpcibdibgbjaevbpbmsz.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwY2liZGliZ2JqYWV2YnBibXN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODUyNDQsImV4cCI6MjA2NjM2MTI0NH0.D777BV0CcbMhkNksjCN3T8zkaG_yhjiYxG999agEx_s",

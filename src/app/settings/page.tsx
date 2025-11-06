@@ -31,7 +31,8 @@ import {
   MoreVertical,
   Eye,
   EyeOff,
-  Lock
+  Lock,
+  CheckCircle
 } from 'lucide-react'
 
 export default function SettingsPage() {
@@ -318,20 +319,20 @@ export default function SettingsPage() {
       setSuccess(userFormData.changePassword 
         ? 'User profile and password updated successfully!' 
         : 'User updated successfully!')
-      setEditingUser(null)
-      setUserFormData({
-        email: '',
-        full_name: '',
-        role: 'staff',
-        department: '',
-        phone: '',
-        password: '',
+        setEditingUser(null)
+        setUserFormData({
+          email: '',
+          full_name: '',
+          role: 'staff',
+          department: '',
+          phone: '',
+          password: '',
         confirmPassword: '',
         createWithPassword: false,
         changePassword: false
-      })
-      loadUsers()
-      setTimeout(() => setSuccess(''), 3000)
+        })
+        loadUsers()
+        setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
       console.error('Error updating user:', err)
       setError('An unexpected error occurred')
@@ -1038,6 +1039,17 @@ export default function SettingsPage() {
                                             <button
                                               onClick={() => {
                                                 setUserMenuOpen(null)
+                                                handleUserAction('confirm_email', userItem.id, userItem.email)
+                                              }}
+                                              className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                            >
+                                              <CheckCircle className="w-4 h-4 mr-3 text-green-500" />
+                                              Confirm Email
+                                            </button>
+
+                                            <button
+                                              onClick={() => {
+                                                setUserMenuOpen(null)
                                                 handleUserAction('reset_password', userItem.id, userItem.email)
                                               }}
                                               className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
@@ -1045,18 +1057,7 @@ export default function SettingsPage() {
                                               <Mail className="w-4 h-4 mr-3 text-gray-400" />
                                               Send Password Reset Email
                                             </button>
-
-                                            <button
-                                              onClick={() => {
-                                                setUserMenuOpen(null)
-                                                handleUserAction('confirm_email', userItem.id, userItem.email)
-                                              }}
-                                              className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                                            >
-                                              <Check className="w-4 h-4 mr-3 text-gray-400" />
-                                              Confirm Email
-                                            </button>
-
+                                            
                                             <button
                                               onClick={() => {
                                                 setUserMenuOpen(null)
