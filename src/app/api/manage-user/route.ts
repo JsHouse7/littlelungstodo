@@ -376,6 +376,28 @@ export async function POST(request: Request) {
           )
         }
 
+        // First, check if the user exists in auth system
+        console.log('Checking if user exists in auth system:', userId)
+        try {
+          const { data: userData, error: userCheckError } = await supabaseAdmin.auth.admin.getUserById(userId)
+
+          if (userCheckError || !userData.user) {
+            console.error('User not found in auth system:', userCheckError)
+            return NextResponse.json(
+              { error: 'User not found in authentication system' },
+              { status: 404 }
+            )
+          }
+
+          console.log('User found in auth system:', userData.user.email)
+        } catch (checkError) {
+          console.error('Error checking user existence:', checkError)
+          return NextResponse.json(
+            { error: 'Failed to verify user exists' },
+            { status: 500 }
+          )
+        }
+
         // Update user's password directly
         console.log('Attempting to update password for userId:', userId)
         const { data: updateResult, error: passwordError } = await supabaseAdmin.auth.admin.updateUser({
