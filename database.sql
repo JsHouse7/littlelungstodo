@@ -84,6 +84,36 @@ CREATE TABLE IF NOT EXISTS public.task_attachments (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
+-- User invitations tracking
+CREATE TABLE IF NOT EXISTS public.user_invitations (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  invited_by UUID REFERENCES public.profiles(id) NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('admin', 'doctor', 'staff')),
+  department TEXT,
+  phone TEXT,
+  full_name TEXT,
+  invited_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  accepted_at TIMESTAMP WITH TIME ZONE,
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'expired', 'cancelled')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Audit log for user management operations
+CREATE TABLE IF NOT EXISTS public.user_audit_log (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  performed_by UUID REFERENCES public.profiles(id) NOT NULL,
+  action TEXT NOT NULL CHECK (action IN ('invite_user', 'update_user', 'reset_password', 'deactivate_user', 'activate_user', 'delete_user')),
+  target_user_id UUID,
+  target_user_email TEXT,
+  details JSONB,
+  ip_address INET,
+  user_agent TEXT,
+  performed_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
 -- Insert default column definitions for each sheet type
 
 -- Monthly task sheet columns
@@ -118,6 +148,8 @@ ALTER TABLE public.column_definitions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_column_preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.task_attachments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_invitations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_audit_log ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 
@@ -207,14 +239,86 @@ CREATE POLICY "All users can view task attachments" ON public.task_attachments
 CREATE POLICY "Users can upload attachments" ON public.task_attachments
   FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
+-- User invitations: Only admins can view and manage invitations
+CREATE POLICY "Admins can view all invitations" ON public.user_invitations
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+CREATE POLICY "Admins can create invitations" ON public.user_invitations
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+CREATE POLICY "Admins can update invitations" ON public.user_invitations
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+-- Audit log: Only admins can view audit logs, system can insert
+CREATE POLICY "Admins can view audit logs" ON public.user_audit_log
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+CREATE POLICY "System can create audit logs" ON public.user_audit_log
+  FOR INSERT WITH CHECK (true);
+
 -- Functions and Triggers
 
 -- Function to handle user signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  invitation_record RECORD;
 BEGIN
-  INSERT INTO public.profiles (id, email, full_name)
-  VALUES (NEW.id, NEW.email, NEW.raw_user_meta_data->>'full_name');
+  -- Check if this user was invited
+  SELECT * INTO invitation_record
+  FROM public.user_invitations
+  WHERE email = NEW.email AND status = 'pending'
+  LIMIT 1;
+
+  IF FOUND THEN
+    -- Create profile from invitation data
+    INSERT INTO public.profiles (id, email, full_name, role, department, phone, is_active)
+    VALUES (
+      NEW.id,
+      NEW.email,
+      COALESCE(invitation_record.full_name, NEW.raw_user_meta_data->>'full_name'),
+      invitation_record.role,
+      invitation_record.department,
+      invitation_record.phone,
+      true
+    );
+
+    -- Mark invitation as accepted
+    UPDATE public.user_invitations
+    SET status = 'accepted', accepted_at = NOW(), updated_at = NOW()
+    WHERE id = invitation_record.id;
+  ELSE
+    -- Fallback: create basic profile for non-invited users
+    INSERT INTO public.profiles (id, email, full_name, role, is_active)
+    VALUES (
+      NEW.id,
+      NEW.email,
+      COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
+      COALESCE(NEW.raw_user_meta_data->>'role', 'staff'),
+      true
+    );
+  END IF;
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -241,6 +345,9 @@ CREATE TRIGGER handle_updated_at BEFORE UPDATE ON public.sheets
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 CREATE TRIGGER handle_updated_at BEFORE UPDATE ON public.tasks
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+CREATE TRIGGER handle_updated_at BEFORE UPDATE ON public.user_invitations
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 -- Enable realtime for tables

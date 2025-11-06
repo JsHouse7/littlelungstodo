@@ -47,12 +47,8 @@ export default function SettingsPage() {
     full_name: '',
     role: 'staff' as 'admin' | 'doctor' | 'staff',
     department: '',
-    phone: '',
-    password: '',
-    confirmPassword: ''
+    phone: ''
   })
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [profileFormData, setProfileFormData] = useState({
     full_name: profile?.full_name || '',
     department: profile?.department || '',
@@ -147,39 +143,41 @@ export default function SettingsPage() {
     setError('')
     setSuccess('')
 
-    // Validate password fields
-    if (!userFormData.password) {
-      setError('Password is required')
+    // Validate required fields
+    if (!userFormData.email) {
+      setError('Email is required')
       setSaveLoading(false)
       return
     }
 
-    if (userFormData.password.length < 6) {
-      setError('Password must be at least 6 characters long')
+    if (!userFormData.role) {
+      setError('Role is required')
       setSaveLoading(false)
       return
     }
 
-    if (userFormData.password !== userFormData.confirmPassword) {
-      setError('Passwords do not match')
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(userFormData.email)) {
+      setError('Please enter a valid email address')
       setSaveLoading(false)
       return
     }
 
     try {
       // Call the API endpoint to invite the user
-      const response = await fetch('/api/invite-user', {
+      const response = await fetch('/api/manage-user', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          action: 'invite_user',
           email: userFormData.email,
           full_name: userFormData.full_name,
           role: userFormData.role,
           department: userFormData.department,
-          phone: userFormData.phone,
-          password: userFormData.password
+          phone: userFormData.phone
         })
       })
 
@@ -190,15 +188,13 @@ export default function SettingsPage() {
         return
       }
 
-      setSuccess('User created successfully! They can now log in with their credentials.')
+      setSuccess('Invitation sent successfully! The user will receive an email with instructions to set up their account.')
       setUserFormData({
         email: '',
         full_name: '',
         role: 'staff',
         department: '',
-        phone: '',
-        password: '',
-        confirmPassword: ''
+        phone: ''
       })
       setShowAddUser(false)
       loadUsers()
@@ -220,33 +216,40 @@ export default function SettingsPage() {
     setSuccess('')
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: userFormData.full_name.trim() || null,
+      // Call the API endpoint to update the user
+      const response = await fetch('/api/manage-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'update_user',
+          userId: editingUser.id,
+          full_name: userFormData.full_name,
           role: userFormData.role,
-          department: userFormData.department.trim() || null,
-          phone: userFormData.phone.trim() || null
+          department: userFormData.department,
+          phone: userFormData.phone
         })
-        .eq('id', editingUser.id)
+      })
 
-      if (error) {
-        setError('Failed to update user: ' + error.message)
-      } else {
-        setSuccess('User updated successfully!')
-        setEditingUser(null)
-        setUserFormData({
-          email: '',
-          full_name: '',
-          role: 'staff',
-          department: '',
-          phone: '',
-          password: '',
-          confirmPassword: ''
-        })
-        loadUsers()
-        setTimeout(() => setSuccess(''), 3000)
+      const result = await response.json()
+
+      if (!response.ok) {
+        setError(result.error || 'Failed to update user')
+        return
       }
+
+      setSuccess('User updated successfully!')
+      setEditingUser(null)
+      setUserFormData({
+        email: '',
+        full_name: '',
+        role: 'staff',
+        department: '',
+        phone: ''
+      })
+      loadUsers()
+      setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
       console.error('Error updating user:', err)
       setError('An unexpected error occurred')
@@ -295,7 +298,7 @@ export default function SettingsPage() {
   }
 
   const handleToggleUserStatus = async (userId: string, currentStatus: boolean) => {
-    const action = currentStatus ? 'hibernate_user' : 'activate_user'
+    const action = currentStatus ? 'deactivate_user' : 'activate_user'
     const userItem = users.find(u => u.id === userId)
     if (userItem) {
       await handleUserAction(action, userId, userItem.email)
@@ -309,9 +312,7 @@ export default function SettingsPage() {
       full_name: user.full_name || '',
       role: user.role,
       department: user.department || '',
-      phone: user.phone || '',
-      password: '',
-      confirmPassword: ''
+      phone: user.phone || ''
     })
   }
 
@@ -323,9 +324,7 @@ export default function SettingsPage() {
       full_name: '',
       role: 'staff',
       department: '',
-      phone: '',
-      password: '',
-      confirmPassword: ''
+      phone: ''
     })
     setError('')
   }
@@ -555,7 +554,7 @@ export default function SettingsPage() {
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center w-full sm:w-auto"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Invite User
+                  Send Invitation
                 </button>
               </div>
 
@@ -565,7 +564,7 @@ export default function SettingsPage() {
               } w-full`}>
                 <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 w-full">
                   <h4 className="text-lg font-medium text-gray-900 mb-4">
-                    {editingUser ? 'Edit User' : 'Invite New User'}
+                    {editingUser ? 'Edit User' : 'Send User Invitation'}
                   </h4>
                   
                   <div className="space-y-4">
@@ -645,67 +644,17 @@ export default function SettingsPage() {
                       />
                     </div>
 
-                    {/* Password fields - only shown when creating new user */}
+                    {/* Email note for invitations */}
                     {!editingUser && (
-                      <>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Password <span className="text-red-500">*</span>
-                          </label>
-                          <div className="relative">
-                            <input
-                              type={showPassword ? 'text' : 'password'}
-                              value={userFormData.password}
-                              onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
-                              className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                              placeholder="Enter password (min 6 characters)"
-                              required
-                            />
-                                                         <button
-                               type="button"
-                               onClick={() => setShowPassword(!showPassword)}
-                               className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600"
-                             >
-                               {showPassword ? (
-                                 <EyeOff className="w-4 h-4" />
-                               ) : (
-                                 <Eye className="w-4 h-4" />
-                               )}
-                             </button>
+                      <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                        <div className="flex items-start">
+                          <Mail className="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                          <div className="text-sm text-blue-800">
+                            <p className="font-medium">Email Invitation</p>
+                            <p>The user will receive an email invitation to set up their account and password. No password is required during invitation.</p>
                           </div>
                         </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Confirm Password <span className="text-red-500">*</span>
-                          </label>
-                          <div className="relative">
-                            <input
-                              type={showConfirmPassword ? 'text' : 'password'}
-                              value={userFormData.confirmPassword}
-                              onChange={(e) => setUserFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                              className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                              placeholder="Confirm password"
-                              required
-                            />
-                                                         <button
-                               type="button"
-                               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                               className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600"
-                             >
-                               {showConfirmPassword ? (
-                                 <EyeOff className="w-4 h-4" />
-                               ) : (
-                                 <Eye className="w-4 h-4" />
-                               )}
-                             </button>
-                          </div>
-                          {userFormData.password && userFormData.confirmPassword && 
-                           userFormData.password !== userFormData.confirmPassword && (
-                            <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
-                          )}
-                        </div>
-                      </>
+                      </div>
                     )}
 
                     <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4 border-t border-gray-200">
@@ -717,10 +666,10 @@ export default function SettingsPage() {
                       </button>
                       <button
                         onClick={editingUser ? handleUpdateUser : handleInviteUser}
-                        disabled={saveLoading || !userFormData.email || (!editingUser && (!userFormData.password || !userFormData.confirmPassword))}
+                        disabled={saveLoading || !userFormData.email || !userFormData.role}
                         className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto"
                       >
-                        {saveLoading ? 'Processing...' : editingUser ? 'Update User' : 'Create User'}
+                        {saveLoading ? 'Processing...' : editingUser ? 'Update User' : 'Send Invitation'}
                       </button>
                     </div>
                   </div>

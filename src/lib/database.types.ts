@@ -210,6 +210,88 @@ export interface Database {
           created_at?: string
         }
       }
+      user_invitations: {
+        Row: {
+          id: string
+          email: string
+          invited_by: string
+          role: 'admin' | 'doctor' | 'staff'
+          department: string | null
+          phone: string | null
+          full_name: string | null
+          invited_at: string
+          accepted_at: string | null
+          status: 'pending' | 'accepted' | 'expired' | 'cancelled'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          email: string
+          invited_by: string
+          role: 'admin' | 'doctor' | 'staff'
+          department?: string | null
+          phone?: string | null
+          full_name?: string | null
+          invited_at?: string
+          accepted_at?: string | null
+          status?: 'pending' | 'accepted' | 'expired' | 'cancelled'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          invited_by?: string
+          role?: 'admin' | 'doctor' | 'staff'
+          department?: string | null
+          phone?: string | null
+          full_name?: string | null
+          invited_at?: string
+          accepted_at?: string | null
+          status?: 'pending' | 'accepted' | 'expired' | 'cancelled'
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      user_audit_log: {
+        Row: {
+          id: string
+          performed_by: string
+          action: 'invite_user' | 'update_user' | 'reset_password' | 'deactivate_user' | 'activate_user' | 'delete_user'
+          target_user_id: string | null
+          target_user_email: string | null
+          details: Json | null
+          ip_address: string | null
+          user_agent: string | null
+          performed_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          performed_by: string
+          action: 'invite_user' | 'update_user' | 'reset_password' | 'deactivate_user' | 'activate_user' | 'delete_user'
+          target_user_id?: string | null
+          target_user_email?: string | null
+          details?: Json | null
+          ip_address?: string | null
+          user_agent?: string | null
+          performed_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          performed_by?: string
+          action?: 'invite_user' | 'update_user' | 'reset_password' | 'deactivate_user' | 'activate_user' | 'delete_user'
+          target_user_id?: string | null
+          target_user_email?: string | null
+          details?: Json | null
+          ip_address?: string | null
+          user_agent?: string | null
+          performed_at?: string
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -233,4 +315,6 @@ export type Sheet = Database['public']['Tables']['sheets']['Row']
 export type Task = Database['public']['Tables']['tasks']['Row']
 export type ColumnDefinition = Database['public']['Tables']['column_definitions']['Row']
 export type UserColumnPreference = Database['public']['Tables']['user_column_preferences']['Row']
-export type TaskAttachment = Database['public']['Tables']['task_attachments']['Row'] 
+export type TaskAttachment = Database['public']['Tables']['task_attachments']['Row']
+export type UserInvitation = Database['public']['Tables']['user_invitations']['Row']
+export type UserAuditLog = Database['public']['Tables']['user_audit_log']['Row'] 
