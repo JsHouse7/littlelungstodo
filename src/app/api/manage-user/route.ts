@@ -121,65 +121,94 @@ export async function POST(request: Request) {
           )
         }
 
-        // Check if user already exists
-        const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
-        const userExists = existingUsers?.users?.some(user => user.email === email)
+        // Check if user already exists (using a more reliable method)
+        try {
+          const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
+          const userExists = existingUsers?.users?.some(user => user.email === email)
 
-        if (userExists) {
-          return NextResponse.json(
-            { error: 'User with this email already exists' },
-            { status: 409 }
-          )
+          if (userExists) {
+            return NextResponse.json(
+              { error: 'User with this email already exists' },
+              { status: 409 }
+            )
+          }
+        } catch (listError) {
+          console.warn('Could not check existing users, proceeding with invitation:', listError)
+          // If we can't check existing users, we'll let Supabase handle duplicate emails
         }
 
         // Generate invitation link
-        const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.generateLink({
-          type: 'invite',
-          email: email,
-          options: {
-            redirectTo: `${redirectTo}/login`,
-            data: {
-              full_name: full_name?.trim(),
-              role,
-              department: department?.trim(),
-              phone: phone?.trim()
+        let inviteData, inviteError
+        try {
+          const result = await supabaseAdmin.auth.admin.generateLink({
+            type: 'invite',
+            email: email,
+            options: {
+              redirectTo: `${redirectTo}/login`,
+              data: {
+                full_name: full_name?.trim(),
+                role,
+                department: department?.trim(),
+                phone: phone?.trim()
+              }
             }
-          }
-        })
+          })
+          inviteData = result.data
+          inviteError = result.error
+        } catch (genError) {
+          console.error('Exception during invitation generation:', genError)
+          return NextResponse.json(
+            { error: 'Failed to generate invitation link' },
+            { status: 500 }
+          )
+        }
 
         if (inviteError) {
-          console.error('Invitation error:', inviteError)
+          console.error('Invitation generation error:', inviteError)
           return NextResponse.json(
             { error: `Failed to send invitation: ${inviteError.message}` },
             { status: 500 }
           )
         }
 
-        // Create pending invitation record
-        const { error: invitationRecordError } = await supabase
-          .from('user_invitations')
-          .insert([{
-            email,
-            invited_by: session.user.id,
-            role,
-            department: department?.trim() || null,
-            phone: phone?.trim() || null,
-            full_name: full_name?.trim() || null,
-            invited_at: new Date().toISOString(),
-            status: 'pending'
-          }])
+        // Create pending invitation record (optional - invitation will still work if this fails)
+        try {
+          const { error: invitationRecordError } = await supabase
+            .from('user_invitations')
+            .insert([{
+              email,
+              invited_by: session.user.id,
+              role,
+              department: department?.trim() || null,
+              phone: phone?.trim() || null,
+              full_name: full_name?.trim() || null,
+              invited_at: new Date().toISOString(),
+              status: 'pending'
+            }])
 
-        if (invitationRecordError) {
-          console.warn('Failed to create invitation record:', invitationRecordError)
+          if (invitationRecordError) {
+            console.warn('Failed to create invitation record (continuing anyway):', invitationRecordError)
+            // Don't fail the invitation if we can't create the record
+          } else {
+            console.log('Invitation record created successfully')
+          }
+        } catch (dbError) {
+          console.warn('Database error creating invitation record (continuing anyway):', dbError)
+          // Continue with invitation even if DB record creation fails
         }
 
         // Log the invitation
-        await createAuditLog(supabase, session.user.id, 'invite_user', null, email, {
-          role,
-          department,
-          phone,
-          full_name
-        }, request)
+        try {
+          await createAuditLog(supabase, session.user.id, 'invite_user', null, email, {
+            role,
+            department,
+            phone,
+            full_name
+          }, request)
+        } catch (auditError) {
+          console.warn('Failed to create audit log:', auditError)
+          // Don't fail invitation if audit logging fails
+        }
 
         return NextResponse.json({
           success: true,
