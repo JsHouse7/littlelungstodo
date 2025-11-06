@@ -408,8 +408,7 @@ export async function POST(request: Request) {
           console.log('Attempting to update password for userId:', userId)
           let updateResult, passwordError
           try {
-            const result = await supabaseAdmin.auth.admin.updateUser({
-              id: userId,
+            const result = await supabaseAdmin.auth.admin.updateUserById(userId, {
               password: password
             })
             updateResult = result.data
