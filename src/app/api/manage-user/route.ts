@@ -87,6 +87,12 @@ export async function POST(request: Request) {
       }
     )
 
+    // Get the correct redirect URL based on environment (used in multiple places)
+    const isProduction = process.env.NODE_ENV === 'production'
+    const redirectTo = isProduction
+      ? process.env.NEXT_PUBLIC_SITE_URL || 'https://littlelungstodo.vercel.app'
+      : 'http://localhost:3000'
+
     switch (action) {
       case 'invite_user':
         // Validate invitation fields
@@ -125,12 +131,6 @@ export async function POST(request: Request) {
             { status: 409 }
           )
         }
-
-        // Get the correct redirect URL based on environment
-        const isProduction = process.env.NODE_ENV === 'production'
-        const redirectTo = isProduction
-          ? process.env.NEXT_PUBLIC_SITE_URL || 'https://littlelungstodo.vercel.app'
-          : 'http://localhost:3000'
 
         // Generate invitation link
         const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.generateLink({
@@ -248,12 +248,6 @@ export async function POST(request: Request) {
             { status: 400 }
           )
         }
-
-        // Get the correct redirect URL based on environment
-        const isProduction = process.env.NODE_ENV === 'production'
-        const redirectTo = isProduction
-          ? process.env.NEXT_PUBLIC_SITE_URL || 'https://littlelungstodo.vercel.app'
-          : 'http://localhost:3000'
 
         // Send password reset email
         const { error: resetError } = await supabaseAdmin.auth.admin.generateLink({
